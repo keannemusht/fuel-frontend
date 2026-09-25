@@ -1,0 +1,634 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+
+  /* Theme Tokens: Dark (Default) */
+  --bg-app: #000000;
+  --bg-sidebar: #000000;
+  --bg-header: rgba(0, 0, 0, 0.7);
+  --bg-card: #0A0A0A;
+  --bg-surface: #0D0D0D;
+  --bg-elevated: #121212;
+  --bg-input: #1A1A1A;
+  --bg-input-focus: #222222;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-muted: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --text-primary: #FFFFFF;
+  --text-secondary: #EDEDED;
+  --text-muted: #888888;
+  --text-dim: #666666;
+  --btn-primary-bg: #FFFFFF;
+  --btn-primary-text: #000000;
+  --btn-primary-hover: #EAEAEA;
+  --badge-bg: rgba(255, 255, 255, 0.05);
+  --badge-text: #999999;
+  --badge-border: rgba(255, 255, 255, 0.08);
+  --table-header: #111111;
+  --table-hover: rgba(255, 255, 255, 0.03);
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #262626;
+  --scrollbar-thumb-hover: #404040;
+}
+
+html.light {
+  /* Theme Tokens: Refined Industrial Slate Light */
+  --bg-app: #F4F6F9;
+  --bg-sidebar: #FFFFFF;
+  --bg-header: rgba(255, 255, 255, 0.88);
+  --bg-card: #FFFFFF;
+  --bg-surface: #F8FAFC;
+  --bg-elevated: #FFFFFF;
+  --bg-input: #F8FAFC;
+  --bg-input-focus: #FFFFFF;
+  --border-subtle: #E2E8F0;
+  --border-muted: #CBD5E1;
+  --border-strong: #94A3B8;
+  --text-primary: #0F172A;
+  --text-secondary: #1E293B;
+  --text-muted: #64748B;
+  --text-dim: #94A3B8;
+  --btn-primary-bg: #0F172A;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #1E293B;
+  --badge-bg: #F1F5F9;
+  --badge-text: #475569;
+  --badge-border: #E2E8F0;
+  --table-header: #F8FAFC;
+  --table-hover: rgba(241, 245, 249, 0.8);
+  --modal-overlay: rgba(15, 23, 42, 0.45);
+  --scrollbar-track: #F1F5F9;
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Framer Modern Glass & Surface Classes */
+.framer-card {
+  background: rgba(18, 18, 18, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+}
+
+.framer-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.framer-card-hover:hover {
+  background: rgba(28, 28, 28, 0.7);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.framer-input {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.framer-input:focus {
+  background: rgba(25, 25, 25, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06), 0 0 20px rgba(255, 255, 255, 0.03);
+  outline: none;
+}
+
+.framer-button-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.framer-button-primary:hover {
+  background: var(--btn-primary-hover);
+  transform: scale(1.01);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+.framer-button-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #EDEDED;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.framer-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Subtle Glow Effects */
+.framer-ambient-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+}
+
+/* Minimal Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ==========================================================================
+   LIGHT MODE INDUSTRIAL COLOR TONE OVERRIDES
+   Harmonious slate neutral palette with crisp dark typography and soft borders
+   ========================================================================== */
+
+html.light ::selection {
+  background-color: #0F172A;
+  color: #FFFFFF;
+}
+
+/* Main Dashboard Canvas */
+html.light .bg-\[\#000000\],
+html.light div.min-h-screen.bg-black,
+html.light body.bg-black {
+  background-color: var(--bg-app) !important;
+}
+
+
+
+/* Persistent & Mobile Sidebar */
+html.light aside {
+  background-color: var(--bg-sidebar) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02);
+}
+
+/* Top Sticky Header */
+html.light header {
+  background-color: var(--bg-header) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* Card, Panel & Containers */
+html.light .bg-\[\#0A0A0A\],
+html.light .framer-card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Secondary Panels, Filters, Pills & Quick Statuses */
+html.light .bg-\[\#0D0D0D\],
+html.light .bg-\[\#0E0E0E\] {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Delta validation telemetry cards fallback */
+html.light .bg-\[\#0D140E\] {
+  background-color: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+}
+
+html.light .bg-\[\#17130A\] {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+}
+
+html.light .bg-\[\#180A0A\] {
+  background-color: #FFF1F2 !important;
+  border-color: #FECDD3 !important;
+}
+
+/* Elevated Containers, Modals & Dialogs */
+html.light .bg-\[\#111111\],
+html.light .bg-\[\#121212\] {
+  background-color: var(--bg-elevated) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Inputs, Keypads, Selects & Textareas */
+html.light .bg-\[\#141414\],
+html.light .bg-\[\#171717\],
+html.light .bg-\[\#1A1A1A\],
+html.light input:not([type='checkbox']):not([type='radio']),
+html.light select,
+html.light textarea {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  background-color: var(--bg-input-focus) !important;
+  border-color: var(--text-primary) !important;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: var(--text-dim) !important;
+}
+
+/* Disabled Input elements */
+html.light input:disabled,
+html.light select:disabled {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+  color: #94A3B8 !important;
+}
+
+/* Table styling in Light Mode */
+html.light table tr.bg-\[\#111111\],
+html.light table thead tr {
+  background-color: var(--table-header) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-muted) !important;
+}
+
+html.light table thead th {
+  color: var(--text-muted) !important;
+  font-weight: 600;
+}
+
+html.light table tbody tr:hover {
+  background-color: var(--table-hover) !important;
+}
+
+html.light table tbody tr {
+  color: var(--text-secondary) !important;
+}
+
+/* Borders & Dividers */
+html.light .border-white\/\[0\.08\],
+html.light .border-white\/\[0\.06\],
+html.light .border-white\/\[0\.05\],
+html.light .border-white\/\[0\.1\],
+html.light .border-white\/\[0\.12\],
+html.light .border-white\/15,
+html.light .border-white\/10 {
+  border-color: var(--border-subtle) !important;
+}
+
+html.light .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
+html.light .divide-white\/\[0\.06\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Typography in Light Mode: map text-white to dark text ONLY on elements intended for dark mode */
+html.light .text-white:not(.text-white-forced):not(.bg-slate-900):not(.bg-slate-900 *):not(.bg-black):not(.bg-black *):not(button.bg-slate-900):not(button.bg-slate-900 *):not(button.bg-black):not(button.bg-black *) {
+  color: var(--text-primary) !important;
+}
+
+/* Dark elements, badges, and primary buttons MUST retain crisp white text in Light Mode */
+html.light .text-white-forced,
+html.light .text-white-forced *,
+html.light button.bg-slate-900,
+html.light button.bg-slate-900 *,
+html.light button.bg-black,
+html.light button.bg-black *,
+html.light a.bg-slate-900,
+html.light a.bg-slate-900 *,
+html.light .bg-slate-900.text-white,
+html.light .bg-black.text-white {
+  color: #FFFFFF !important;
+}
+
+html.light .text-white\/90,
+html.light .text-white\/80 {
+  color: var(--text-secondary) !important;
+}
+
+html.light .text-white\/70,
+html.light .text-\[\#888888\],
+html.light .text-\[\#777\],
+html.light .text-\[\#777777\] {
+  color: var(--text-muted) !important;
+}
+
+html.light .text-\[\#666\],
+html.light .text-\[\#666666\],
+html.light .text-\[\#555\] {
+  color: var(--text-dim) !important;
+}
+
+html.light .text-\[\#999\],
+html.light .text-\[\#999999\],
+html.light .text-\[\#bbb\],
+html.light .text-\[\#AAAAAA\] {
+  color: var(--text-muted) !important;
+}
+
+/* Primary Action Buttons (e.g. "+ Register Unit", "+ Add User", "Export Excel") */
+html.light .bg-white.text-black,
+html.light button.bg-white.text-black,
+html.light .bg-white.text-black *,
+html.light button.bg-white.text-black * {
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+}
+
+html.light .bg-white.text-black:hover,
+html.light button.bg-white.text-black:hover {
+  background-color: var(--btn-primary-hover) !important;
+}
+
+/* Neutral Badge & Category Pills */
+html.light .bg-white\/\[0\.04\],
+html.light .bg-white\/\[0\.05\],
+html.light .bg-white\/\[0\.06\],
+html.light .bg-white\/10 {
+  background-color: var(--badge-bg) !important;
+  border-color: var(--badge-border) !important;
+  color: var(--badge-text) !important;
+}
+
+html.light button.bg-white\/\[0\.04\]:hover,
+html.light button.bg-white\/\[0\.05\]:hover,
+html.light button.bg-white\/\[0\.06\]:hover,
+html.light .bg-white\/\[0\.04\]:hover,
+html.light .bg-white\/\[0\.05\]:hover,
+html.light .bg-white\/\[0\.06\]:hover {
+  background-color: #E2E8F0 !important;
+  color: var(--text-primary) !important;
+}
+
+/* Active Nav item in Sidebar */
+html.light aside nav a.fms-nav-active,
+html.light aside nav a.fms-nav-active:hover {
+  background-color: #0F172A !important;
+  color: #FFFFFF !important;
+  border-color: #0F172A !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
+}
+
+html.light aside nav a.fms-nav-active svg,
+html.light aside nav a.fms-nav-active span:not(.font-mono) {
+  color: #FFFFFF !important;
+}
+
+html.light aside nav a.fms-nav-inactive {
+  color: #475569 !important;
+}
+
+html.light aside nav a.fms-nav-inactive:hover {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+html.light aside nav a.fms-nav-inactive:hover svg {
+  color: #0F172A !important;
+}
+
+/* Brand logo icon in sidebar (Light Mode) */
+html.light aside .w-9.h-9.bg-slate-900 {
+  background-color: #0F172A !important;
+}
+
+html.light aside .w-9.h-9.bg-slate-900 svg {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+}
+
+/* User avatar initial in sidebar (Light Mode) */
+html.light aside .w-9.h-9.bg-slate-900 span,
+html.light aside .w-10.h-10.bg-slate-900 span {
+  color: #FFFFFF !important;
+}
+
+/* Modal backdrop in Light Mode */
+html.light .bg-black\/80 {
+  background-color: var(--modal-overlay) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Status Badges in Light Mode */
+html.light .bg-emerald-500\/10 {
+  background-color: #ECFDF5 !important;
+  color: #059669 !important;
+  border-color: #A7F3D0 !important;
+}
+
+html.light .bg-rose-500\/10 {
+  background-color: #FFF1F2 !important;
+  color: #E11D48 !important;
+  border-color: #FECDD3 !important;
+}
+
+html.light .bg-amber-500\/10 {
+  background-color: #FFFBEB !important;
+  color: #D97706 !important;
+  border-color: #FDE68A !important;
+}
+
+html.light .bg-purple-500\/10 {
+  background-color: #FAF5FF !important;
+  color: #7E22CE !important;
+  border-color: #E9D5FF !important;
+}
+
+html.light .bg-cyan-500\/10 {
+  background-color: #ECFEFF !important;
+  color: #0E7490 !important;
+  border-color: #A5F3FC !important;
+}
+
+/* Framer secondary button */
+html.light .framer-button-secondary {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+html.light .framer-button-secondary:hover {
+  background-color: #E2E8F0 !important;
+}
+
+/* ========================================================================= */
+/* REACT-TOASTIFY CUSTOM THEME INTEGRATION                                   */
+/* ========================================================================= */
+
+.Toastify__toast-container--bottom-right {
+  bottom: 1.5rem !important;
+  right: 1.5rem !important;
+  width: auto !important;
+  max-width: 420px !important;
+  z-index: 99999 !important;
+}
+
+/* Toast Card Base */
+.Toastify__toast {
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  border-radius: 1rem !important; /* 16px rounded-2xl */
+  padding: 12px 16px !important;
+  min-height: 52px !important;
+  margin-bottom: 0.75rem !important;
+  box-sizing: border-box !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Dark Mode Toast */
+.Toastify__toast-theme--dark,
+.dark .Toastify__toast {
+  background: rgba(14, 14, 14, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  color: #F1F5F9 !important;
+}
+
+/* Light Mode Toast */
+.Toastify__toast-theme--light,
+html.light .Toastify__toast {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.12), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+  color: #0F172A !important;
+}
+
+/* Toast Body */
+.Toastify__toast-body {
+  font-family: var(--font-sans) !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+  padding: 0 6px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Toast Icons - Unified Tone matching app accents */
+.Toastify__toast-icon {
+  width: 20px !important;
+  margin-inline-end: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Success: Emerald */
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #10B981 !important;
+}
+html.light .Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #059669 !important;
+}
+
+/* Error: Rose */
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #F43F5E !important;
+}
+html.light .Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #E11D48 !important;
+}
+
+/* Warning: Amber */
+.Toastify__toast--warning .Toastify__toast-icon svg {
+  fill: #F59E0B !important;
+}
+html.light .Toastify__toast--warning .Toastify__toast-icon svg {
+  fill: #D97706 !important;
+}
+
+/* Info: Sky / Cyan (Batara Corporate Tone) */
+.Toastify__toast--info .Toastify__toast-icon svg {
+  fill: #0EA5E9 !important;
+}
+html.light .Toastify__toast--info .Toastify__toast-icon svg {
+  fill: #0284C7 !important;
+}
+
+/* Close Button */
+.Toastify__close-button {
+  align-self: center !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.2s ease, transform 0.15s ease !important;
+  padding: 4px !important;
+}
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+.Toastify__close-button--dark {
+  color: #A1A1AA !important;
+}
+.Toastify__close-button--light {
+  color: #64748B !important;
+}
+
+/* Progress Bar - Sleek 3px with exact tone colors */
+.Toastify__progress-bar {
+  height: 3px !important;
+  border-bottom-left-radius: 1rem !important;
+  border-bottom-right-radius: 1rem !important;
+}
+
+.Toastify__progress-bar--success {
+  background: #10B981 !important;
+}
+html.light .Toastify__progress-bar--success {
+  background: #059669 !important;
+}
+
+.Toastify__progress-bar--error {
+  background: #F43F5E !important;
+}
+html.light .Toastify__progress-bar--error {
+  background: #E11D48 !important;
+}
+
+.Toastify__progress-bar--warning {
+  background: #F59E0B !important;
+}
+html.light .Toastify__progress-bar--warning {
+  background: #D97706 !important;
+}
+
+.Toastify__progress-bar--info {
+  background: #0EA5E9 !important;
+}
+html.light .Toastify__progress-bar--info {
+  background: #0284C7 !important;
+}
+
