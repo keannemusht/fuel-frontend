@@ -582,7 +582,7 @@ export default function SummaryDashboardPage() {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-[#777] font-semibold text-[11px] bg-slate-50/50 dark:bg-white/[0.02]">
-                <th className="py-2.5 px-3">No</th>
+                <th className="py-2.5 px-3">NO ID.</th>
                 <th className="py-2.5 px-3">{t('dash.dateTime', 'Waktu (WITA)')}</th>
                 <th className="py-2.5 px-3">{t('dash.noUnit', 'No Unit')}</th>
                 <th className="py-2.5 px-3">{t('dash.category', 'Kategori')}</th>
@@ -621,8 +621,10 @@ export default function SummaryDashboardPage() {
                     key={log.id || idx}
                     className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="py-2.5 px-3 font-mono text-slate-400 text-[11px]">
-                      {log.no || idx + 1}
+                    <td className="py-2.5 px-3 font-mono text-slate-500 text-[10px] whitespace-nowrap">
+                      {log.logNumber && (log.logNumber.startsWith('F-') || log.logNumber.startsWith('R-'))
+                        ? log.logNumber
+                        : (log.no || idx + 1)}
                     </td>
                     <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-[#888] whitespace-nowrap">
                       {log.dateStr} <span className="text-slate-400">{log.jamStr}</span>

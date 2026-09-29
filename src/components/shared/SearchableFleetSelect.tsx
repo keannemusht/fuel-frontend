@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Unit } from '@/types';
-import { Search, ChevronDown, Truck, Check, X } from 'lucide-react';
+import { Search, ChevronDown, Check, X } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getUnitVisualConfig } from '@/lib/unitVisuals';
 
 interface SearchableFleetSelectProps {
   units: Unit[];
@@ -62,9 +63,11 @@ export default function SearchableFleetSelect({
   const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
 
   const filteredUnits = useMemo(() => {
-    if (!search.trim()) return units;
+    const nonFleetSet = new Set(['PENGISIAN', 'PLANT', 'MUARA PAHU', 'SALDO AWAL']);
+    const fleetOnly = units.filter((u) => !nonFleetSet.has(u.unitCode.toUpperCase().trim()));
+    if (!search.trim()) return fleetOnly;
     const term = search.toLowerCase();
-    return units.filter(
+    return fleetOnly.filter(
       (u) =>
         u.unitCode.toLowerCase().includes(term) ||
         (u.makeModel && u.makeModel.toLowerCase().includes(term)) ||
@@ -73,18 +76,8 @@ export default function SearchableFleetSelect({
     );
   }, [units, search]);
 
-  const getCategoryColor = (cat: string) => {
-    const c = cat.toUpperCase();
-    if (c.includes('DUMP') || c.includes('TRUCK')) {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-    }
-    if (c.includes('EXCA') || c.includes('DIG')) {
-      return 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-    }
-    if (c.includes('DOZER') || c.includes('GRADER')) {
-      return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
-    }
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+  const getCategoryColor = (_cat: string) => {
+    return 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-white/[0.08]';
   };
 
   return (
@@ -109,28 +102,34 @@ export default function SearchableFleetSelect({
         }`}
       >
         {selectedUnit ? (
-          <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs font-mono shrink-0">
-              <Truck className="w-3.5 h-3.5" />
-            </div>
-            <div className="truncate">
-              <div className="flex items-center space-x-2">
-                <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                  {selectedUnit.unitCode}
-                </span>
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold border ${getCategoryColor(
-                    selectedUnit.category
-                  )}`}
-                >
-                  {selectedUnit.category}
-                </span>
+          (() => {
+            const visual = getUnitVisualConfig(selectedUnit.unitCode, selectedUnit.category);
+            const SelectedIcon = visual.Icon;
+            return (
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${visual.containerClass}`}>
+                  <SelectedIcon className="w-3.5 h-3.5" />
+                </div>
+                <div className="truncate">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                      {selectedUnit.unitCode}
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold border ${getCategoryColor(
+                        selectedUnit.category
+                      )}`}
+                    >
+                      {selectedUnit.category}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-[#888] font-mono truncate">
+                    {selectedUnit.makeModel || selectedUnit.plateNumber || 'Fleet Unit'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-[#888] font-mono truncate">
-                {selectedUnit.makeModel || selectedUnit.plateNumber || 'Fleet Unit'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
-              </p>
-            </div>
-          </div>
+            );
+          })()
         ) : (
           <div className="flex items-center space-x-2.5 text-slate-400 dark:text-[#777] text-xs">
             <Search className={`w-3.5 h-3.5 ${isOpen ? 'text-cyan-500' : ''}`} />
@@ -198,6 +197,8 @@ export default function SearchableFleetSelect({
               ) : (
                 filteredUnits.map((u) => {
                   const isCurrent = u.id === selectedUnitId;
+                  const visual = getUnitVisualConfig(u.unitCode, u.category);
+                  const UnitIcon = visual.Icon;
                   return (
                     <button
                       key={u.id}
@@ -213,8 +214,8 @@ export default function SearchableFleetSelect({
                       }`}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
-                        <div className="w-6 h-6 rounded-lg bg-slate-200/70 dark:bg-white/10 flex items-center justify-center font-mono font-bold text-[10px] text-slate-700 dark:text-white shrink-0">
-                          {u.unitCode.slice(0, 2)}
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${visual.containerClass}`}>
+                          <UnitIcon className="w-3.5 h-3.5" />
                         </div>
                         <div className="truncate">
                           <div className="flex items-center space-x-1.5">

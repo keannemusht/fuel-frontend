@@ -110,8 +110,8 @@ export default function HistoryPage() {
     try {
       await api.delete(`/fuel/logs/${deletingLog.id}`);
       const successMsg = lang === 'id' 
-        ? `Berhasil menghapus log #${deletingLog.no ?? ''} (${deletingLog.unitCode})`
-        : `Successfully deleted log #${deletingLog.no ?? ''} (${deletingLog.unitCode})`;
+        ? `Berhasil menghapus log ${deletingLog.logNumber || `#${deletingLog.no ?? ''}`} (${deletingLog.unitCode})`
+        : `Successfully deleted log ${deletingLog.logNumber || `#${deletingLog.no ?? ''}`} (${deletingLog.unitCode})`;
       setSyncFeedback({
         type: 'success',
         message: successMsg,
@@ -520,7 +520,7 @@ export default function HistoryPage() {
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
-              <th className="py-3 px-3.5 text-center">{t('history.colNo', 'NO')}</th>
+              <th className="py-3 px-3.5 text-center">{t('history.colNo', 'NO ID.')}</th>
               <th className="py-3 px-3.5">{t('history.colUnit', 'NO UNIT')}</th>
               <th className="py-3 px-3.5">{t('history.colCategory', 'KATEGORI')}</th>
               <th className="py-3 px-3.5">{t('history.colMerk', 'MERK / TYPE')}</th>
@@ -565,11 +565,20 @@ export default function HistoryPage() {
                   key={log.id}
                   className="hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors text-slate-800 dark:text-white/90"
                 >
-                  <td className="py-3 px-3.5 text-center text-slate-400 dark:text-[#777777]">{log.no}</td>
+                  <td className="py-3 px-3.5 text-center font-mono text-[10px] text-slate-500 dark:text-[#888888] whitespace-nowrap">
+                    {log.logNumber && (log.logNumber.startsWith('F-') || log.logNumber.startsWith('R-'))
+                      ? log.logNumber
+                      : (log.no || log.logNumber || '-')}
+                  </td>
                   <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
                     <div className="flex items-center space-x-1.5">
                       <span>{log.unitCode}</span>
-                      {log.bypassValidation && (
+                      {log.unitCode === 'PENGISIAN' && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
+                          BBM Masuk
+                        </span>
+                      )}
+                      {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
                         <span
                           title={`Bypass: ${log.bypassReason || 'Admin authorized'}`}
                           className="text-amber-500 dark:text-amber-400 cursor-help"
@@ -581,17 +590,17 @@ export default function HistoryPage() {
                   </td>
                   <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs">{log.category || '-'}</td>
                   <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs truncate max-w-[120px]">
-                    {log.unit?.makeModel || '-'}
+                    {log.unitCode === 'PENGISIAN' ? 'Storage Refill' : (log.unit?.makeModel || '-')}
                   </td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.dateStr}</td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.jamStr || '-'}</td>
-                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{formatNumber(log.currentKm, 1)}</td>
-                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{formatNumber(log.currentHm, 1)}</td>
-                  <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-medium">
-                    {log.fuelInLiters > 0 ? formatNumber(log.fuelInLiters, 1) : '-'}
+                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{log.currentKm > 0 ? formatNumber(log.currentKm, 1) : '-'}</td>
+                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{log.currentHm > 0 ? formatNumber(log.currentHm, 1) : '-'}</td>
+                  <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
+                    {log.fuelInLiters > 0 ? `+${formatNumber(log.fuelInLiters, 1)}` : '-'}
                   </td>
                   <td className="py-3 px-3.5 text-right font-bold text-slate-900 dark:text-white text-xs">
-                    {formatNumber(log.volumeLiters, 1)}
+                    {log.volumeLiters > 0 ? formatNumber(log.volumeLiters, 1) : '-'}
                   </td>
                   <td className="py-3 px-3.5 text-slate-800 dark:text-white/80 font-sans text-xs">{log.operator}</td>
                   <td className="py-3 px-3.5 text-center">

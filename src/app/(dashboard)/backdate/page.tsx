@@ -41,6 +41,7 @@ import Link from 'next/link';
 import SearchableOperatorSelect from '@/components/shared/SearchableOperatorSelect';
 import CustomSelect, { CustomSelectOption } from '@/components/shared/CustomSelect';
 import { toast } from 'react-toastify';
+import { getUnitVisualConfig } from '@/lib/unitVisuals';
 
 const BACKDATE_SHIFT_OPTIONS: CustomSelectOption[] = [
   {
@@ -151,9 +152,11 @@ export default function BackdatePage() {
 
   // Filtered Units for selection
   const filteredUnits = useMemo(() => {
-    if (!unitSearch.trim()) return units;
+    const nonFleetSet = new Set(['PENGISIAN', 'PLANT', 'MUARA PAHU', 'SALDO AWAL']);
+    const fleetOnly = units.filter((u) => !nonFleetSet.has(u.unitCode.toUpperCase().trim()));
+    if (!unitSearch.trim()) return fleetOnly;
     const term = unitSearch.toLowerCase();
-    return units.filter(
+    return fleetOnly.filter(
       (u) =>
         u.unitCode.toLowerCase().includes(term) ||
         (u.makeModel && u.makeModel.toLowerCase().includes(term)) ||
@@ -392,19 +395,8 @@ export default function BackdatePage() {
     });
   };
 
-  // Helper for category badge colors
-  const getCategoryColor = (cat: string) => {
-    const c = cat.toUpperCase();
-    if (c.includes('DUMP') || c.includes('TRUCK')) {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-    }
-    if (c.includes('EXCA') || c.includes('DIG')) {
-      return 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-    }
-    if (c.includes('DOZER') || c.includes('GRADER')) {
-      return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
-    }
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+  const getCategoryColor = (_cat: string) => {
+    return 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-white/[0.08]';
   };
 
   // Tank Stock percentage calculation
@@ -661,28 +653,34 @@ export default function BackdatePage() {
                 }`}
               >
                 {selectedUnit ? (
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs font-mono shrink-0">
-                      <Truck className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
-                          {selectedUnit.unitCode}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${getCategoryColor(
-                            selectedUnit.category
-                          )}`}
-                        >
-                          {selectedUnit.category}
-                        </span>
+                  (() => {
+                    const visual = getUnitVisualConfig(selectedUnit.unitCode, selectedUnit.category);
+                    const SelectedUnitIcon = visual.Icon;
+                    return (
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${visual.containerClass}`}>
+                          <SelectedUnitIcon className="w-4 h-4" />
+                        </div>
+                        <div className="truncate">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                              {selectedUnit.unitCode}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${getCategoryColor(
+                                selectedUnit.category
+                              )}`}
+                            >
+                              {selectedUnit.category}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-[#888] truncate mt-0.5">
+                            {selectedUnit.makeModel || 'Heavy Equipment'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-[#888] truncate mt-0.5">
-                        {selectedUnit.makeModel || 'Heavy Equipment'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
-                      </p>
-                    </div>
-                  </div>
+                    );
+                  })()
                 ) : (
                   <div className="flex items-center space-x-2.5 text-slate-400 text-xs">
                     <Search className="w-4 h-4" />
@@ -728,6 +726,8 @@ export default function BackdatePage() {
                       ) : (
                         filteredUnits.map((u) => {
                           const isCurrent = u.id === selectedUnitId;
+                          const visual = getUnitVisualConfig(u.unitCode, u.category);
+                          const ItemUnitIcon = visual.Icon;
                           return (
                             <button
                               key={u.id}
@@ -746,8 +746,8 @@ export default function BackdatePage() {
                               }`}
                             >
                               <div className="flex items-center space-x-2.5 min-w-0">
-                                <div className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-white/10 flex items-center justify-center font-mono font-bold text-[11px] text-slate-700 dark:text-white shrink-0">
-                                  {u.unitCode.slice(0, 2)}
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.containerClass}`}>
+                                  <ItemUnitIcon className="w-3.5 h-3.5" />
                                 </div>
                                 <div className="truncate">
                                   <div className="flex items-center space-x-2">
@@ -987,11 +987,11 @@ export default function BackdatePage() {
                 </h2>
               </div>
               {isLoadingContext ? (
-                <span className="text-[10px] font-mono text-purple-500 animate-pulse">
+                <span className="text-[10px] font-mono text-slate-400 animate-pulse">
                   Sinkronisasi Log...
                 </span>
               ) : selectedUnit ? (
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.12] shadow-sm">
                   {selectedUnit.unitCode}
                 </span>
               ) : null}
@@ -1038,12 +1038,11 @@ export default function BackdatePage() {
 
                   {/* Point 2: Target Backfill (Now Being Edited) */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-amber-500 bg-amber-500 shrink-0 animate-ping" />
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-amber-500 bg-amber-500 shrink-0" />
-                    <div className="p-3 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-slate-900 bg-white dark:border-white dark:bg-black shrink-0" />
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.08] space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600 dark:text-[#999]">
                         <span>Target Backfill (Posisi Input)</span>
-                        <span className="font-mono">
+                        <span className="font-mono text-slate-700 dark:text-slate-300">
                           {dateStr} • {jamStr}
                         </span>
                       </div>
@@ -1056,11 +1055,11 @@ export default function BackdatePage() {
                         </span>
                       </div>
                       {hasInputs && (
-                        <div className="flex items-center justify-between pt-1 border-t border-amber-500/20 text-[10px] font-mono">
-                          <span className={deltaKm >= 0 && deltaKm <= 1000 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-white/[0.06] text-[10px] font-mono">
+                          <span className={deltaKm >= 0 && deltaKm <= 1000 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
                             Δ KM: {deltaKm >= 0 ? `+${formatNumber(deltaKm, 1)}` : formatNumber(deltaKm, 1)}
                           </span>
-                          <span className={deltaHm >= 0 && deltaHm <= 24 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                          <span className={deltaHm >= 0 && deltaHm <= 24 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
                             Δ HM: {deltaHm >= 0 ? `+${formatNumber(deltaHm, 1)}` : formatNumber(deltaHm, 1)}
                           </span>
                         </div>
@@ -1103,7 +1102,7 @@ export default function BackdatePage() {
           <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-slate-700 dark:text-white/70" />
+                <ShieldCheck className="w-4 h-4 text-slate-700 dark:text-white/70" />
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                   Validasi Aturan HM & KM
                 </h2>
@@ -1118,7 +1117,7 @@ export default function BackdatePage() {
                     ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                     : validationStatus === 'BYPASS'
                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 animate-pulse'
+                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                 }`}
               >
                 {validationStatus === 'EMPTY' && 'MENUNGGU INPUT'}
@@ -1384,7 +1383,7 @@ export default function BackdatePage() {
               </div>
             )}
 
-            {/* Glowing High-Contrast Submit Button */}
+            {/* Submit Button aligned with Dispenser page */}
             <div className="space-y-2 pt-1">
               <button
                 type="submit"
@@ -1393,18 +1392,20 @@ export default function BackdatePage() {
                   !selectedUnitId ||
                   !isMeterValid
                 }
-                className={`w-full py-4 px-5 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2.5 transition-all shadow-md active:scale-[0.98] ${
-                  !selectedUnitId || !isMeterValid
-                    ? 'bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-[#666] border border-slate-300 dark:border-white/10 cursor-not-allowed'
-                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/25 hover:shadow-amber-500/35 cursor-pointer'
-                }`}
+                className="w-full py-3.5 sm:py-4 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-[0.99] text-white dark:text-black font-semibold text-xs tracking-wide uppercase transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed text-white-forced cursor-pointer"
               >
-                <Send className={`w-4 h-4 ${backdateMutation.isPending ? 'animate-spin' : ''}`} />
-                <span>
-                  {backdateMutation.isPending
-                    ? t('backdate.saving', 'Menyimpan & Menyinkronkan...')
-                    : t('backdate.submit', 'Submit')}
-                </span>
+                {backdateMutation.isPending ? (
+                  <span className="text-white dark:text-black font-semibold">
+                    {t('backdate.saving', 'Menyimpan & Menyinkronkan...')}
+                  </span>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5 text-white dark:text-black" />
+                    <span className="text-white dark:text-black font-semibold">
+                      {t('backdate.submit', 'Submit')}
+                    </span>
+                  </>
+                )}
               </button>
 
               {(!selectedUnitId || !isMeterValid) && (
@@ -1479,7 +1480,7 @@ export default function BackdatePage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-[#121212] text-slate-400 text-[11px]">
-                  <th className="py-3 px-3.5 font-semibold">No</th>
+                  <th className="py-3 px-3.5 font-semibold">NO ID.</th>
                   <th className="py-3 px-3.5 font-semibold">Jam</th>
                   <th className="py-3 px-3.5 font-semibold">Unit Fleet</th>
                   <th className="py-3 px-3.5 font-semibold">Operator</th>
@@ -1501,7 +1502,11 @@ export default function BackdatePage() {
                         isCurrentTarget ? 'bg-amber-500/5 dark:bg-amber-500/5' : ''
                       }`}
                     >
-                      <td className="py-3 px-3.5 font-mono text-slate-500">#{log.no}</td>
+                      <td className="py-3 px-3.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                        {log.logNumber && (log.logNumber.startsWith('F-') || log.logNumber.startsWith('R-'))
+                          ? log.logNumber
+                          : `#${log.no}`}
+                      </td>
                       <td className="py-3 px-3.5 font-mono font-medium text-slate-800 dark:text-white">
                         {log.jamStr}
                       </td>

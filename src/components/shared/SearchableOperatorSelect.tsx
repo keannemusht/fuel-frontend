@@ -239,8 +239,8 @@ export default function SearchableOperatorSelect({
                       }`}
                     >
                       <div className="flex items-center space-x-2.5 truncate">
-                        <div className="w-6 h-6 rounded-lg bg-slate-200/70 dark:bg-white/10 flex items-center justify-center font-mono font-bold text-[10px] text-slate-700 dark:text-white shrink-0">
-                          {getInitialLetter(op)}
+                        <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/[0.08]">
+                          <User className="w-3.5 h-3.5" />
                         </div>
                         <span className="truncate">{op}</span>
                       </div>

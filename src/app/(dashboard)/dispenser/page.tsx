@@ -11,6 +11,7 @@ import GloveKeypad from '@/components/dispenser/GloveKeypad';
 import TankGauge from '@/components/dispenser/TankGauge';
 import SearchableFleetSelect from '@/components/shared/SearchableFleetSelect';
 import SearchableOperatorSelect from '@/components/shared/SearchableOperatorSelect';
+import InboundFuelModal from '@/components/dispenser/InboundFuelModal';
 import {
   Fuel,
   Truck,
@@ -21,9 +22,28 @@ import {
   Activity,
   Calculator,
   User,
+  Clock,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { toast } from 'react-toastify';
+
+// Get current WITA operational time (HH:mm)
+const getInitialWitaTime = (): string => {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Makassar',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date());
+  } catch {
+    const d = new Date();
+    const h = String((d.getUTCHours() + 8) % 24).padStart(2, '0');
+    const m = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+};
 
 // Auto-detect operational shift based on WITA mining site time (06:00 - 18:00 WITA is SHIFT 1, else SHIFT 2)
 const getOperationalShift = (): string => {
@@ -41,6 +61,15 @@ const getOperationalShift = (): string => {
   }
 };
 
+// Calculate shift based on user input time (HH:mm)
+const getShiftFromTime = (timeStr?: string): string => {
+  if (!timeStr) return getOperationalShift();
+  const parts = timeStr.split(':');
+  const hour = parseInt(parts[0], 10);
+  if (isNaN(hour)) return getOperationalShift();
+  return hour >= 6 && hour < 18 ? 'SHIFT 1' : 'SHIFT 2';
+};
+
 export default function DispenserPage() {
   const { user } = useAuth();
   const { t, lang } = useLanguage();
@@ -52,12 +81,14 @@ export default function DispenserPage() {
   const [currentKm, setCurrentKm] = useState<string>('');
   const [currentHm, setCurrentHm] = useState<string>('');
   const [volumeLiters, setVolumeLiters] = useState<string>('');
-  const currentShift = getOperationalShift();
+  const [jamStr, setJamStr] = useState<string>(() => getInitialWitaTime());
+  const computedShift = getShiftFromTime(jamStr);
   const [operator, setOperator] = useState<string>('');
   const [fuelInLiters, setFuelInLiters] = useState<string>('0');
   const [bypassValidation, setBypassValidation] = useState<boolean>(false);
   const [bypassReason, setBypassReason] = useState<string>('');
   const [showKeypad, setShowKeypad] = useState<boolean>(false);
+  const [showInboundModal, setShowInboundModal] = useState<boolean>(false);
   const [activeInput, setActiveInput] = useState<'km' | 'hm' | 'vol'>('vol');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -131,6 +162,7 @@ export default function DispenserPage() {
       setVolumeLiters('');
       setCurrentKm('');
       setCurrentHm('');
+      setJamStr(getInitialWitaTime());
       setBypassValidation(false);
       setBypassReason('');
 
@@ -228,9 +260,10 @@ export default function DispenserPage() {
       currentKm: km,
       currentHm: hm,
       volumeLiters: vol,
-      shift: currentShift,
+      shift: computedShift,
       operator: operator.trim(),
       fuelInLiters: fuelIn,
+      jamStr: jamStr ? `${jamStr}:00` : undefined,
       bypassValidation,
       bypassReason: bypassValidation ? bypassReason : undefined,
     });
@@ -307,16 +340,30 @@ export default function DispenserPage() {
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden">
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('dispenser.inboundRefills', 'Inbound Refills')}</p>
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('dispenser.inboundRefills', 'Inbound Refills')}</p>
+            <button
+              type="button"
+              onClick={() => setShowInboundModal(true)}
+              className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5"
+            >
+              <span>+ Refill</span>
+            </button>
+          </div>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
               {formatNumber(summary?.totalFuelInLiters || 0, 1)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-[#888888] ml-1 font-sans">L</span>
             </h3>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-50 dark:bg-white/[0.05] border border-emerald-200 dark:border-white/[0.08] flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <button
+              type="button"
+              onClick={() => setShowInboundModal(true)}
+              title={lang === 'id' ? 'Catat Penerimaan BBM (Refill Tangki)' : 'Record Inbound Fuel (Tank Refill)'}
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 transition-colors"
+            >
               <Droplet className="w-3.5 h-3.5" />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -349,18 +396,29 @@ export default function DispenserPage() {
                 <p className="text-[11px] sm:text-xs text-slate-500 dark:text-[#888888]">{t('dispenser.docketSubtitle', 'Delta Motor Validation Engine Active')}</p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowKeypad(!showKeypad)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  showKeypad
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.08]'
-                }`}
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span>Keypad {showKeypad ? (lang === 'id' ? 'Aktif' : 'On') : (lang === 'id' ? 'Nonaktif' : 'Off')}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowInboundModal(true)}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 transition-all shadow-sm"
+                >
+                  <ArrowDownToLine className="w-3.5 h-3.5" />
+                  <span>{lang === 'id' ? '+ BBM Masuk' : '+ Inbound Fuel'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowKeypad(!showKeypad)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    showKeypad
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.08]'
+                  }`}
+                >
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>Keypad {showKeypad ? (lang === 'id' ? 'Aktif' : 'On') : (lang === 'id' ? 'Nonaktif' : 'Off')}</span>
+                </button>
+              </div>
             </div>
 
             {/* Banners */}
@@ -528,25 +586,44 @@ export default function DispenserPage() {
               </div>
             </div>
 
-            {/* Operator / Driver (Shift automatically determined by operational time) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
-                  <span>{t('dispenser.operatorDriver', 'Operator / Driver')}</span>
-                </label>
-                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-[10px] font-mono text-slate-600 dark:text-[#888]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>{currentShift === 'SHIFT 1' ? (lang === 'id' ? 'Shift 1' : 'Shift 1') : (lang === 'id' ? 'Shift 2' : 'Shift 2')}</span>
-                  <span className="text-[9px] text-amber-600 dark:text-amber-400 font-semibold">(WITA)</span>
+            {/* Operator & Transaction Time (Jam WITA) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
+                    <span>{t('dispenser.operatorDriver', 'Operator / Driver')}</span>
+                  </label>
+                </div>
+                <SearchableOperatorSelect
+                  value={operator}
+                  onChange={setOperator}
+                  placeholder={t('dispenser.searchOperatorPlaceholder', 'Cari atau ketik nama operator...')}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
+                    <span>{lang === 'id' ? 'Jam (WITA)' : 'Time (WITA)'}</span>
+                  </label>
+                  <div className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-[9px] font-mono text-slate-600 dark:text-[#888]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>{computedShift === 'SHIFT 1' ? 'Shift 1' : 'Shift 2'}</span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="time"
+                    value={jamStr}
+                    onChange={(e) => setJamStr(e.target.value)}
+                    required
+                    className="w-full text-xs font-mono font-medium px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 focus:border-slate-400 dark:focus:border-white/30 focus:outline-none shadow-sm"
+                  />
                 </div>
               </div>
-              <SearchableOperatorSelect
-                value={operator}
-                onChange={setOperator}
-                placeholder={t('dispenser.searchOperatorPlaceholder', 'Cari atau ketik nama operator...')}
-                required
-              />
             </div>
 
             {/* Submit */}
@@ -628,6 +705,13 @@ export default function DispenserPage() {
           )}
         </div>
       </div>
+
+      {/* Inbound Fuel (Storage Tank Refill) Modal */}
+      <InboundFuelModal
+        isOpen={showInboundModal}
+        onClose={() => setShowInboundModal(false)}
+        defaultTankId={selectedTankId}
+      />
     </div>
   );
 }

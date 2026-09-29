@@ -40,7 +40,7 @@ export default function ShiftLogTable({
       <table className="w-full text-left border-collapse text-xs">
         <thead>
           <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-semibold text-slate-500 dark:text-[#888888]">
-            <th className="py-3 px-3.5 text-center">NO</th>
+            <th className="py-3 px-3.5 text-center">NO ID.</th>
             <th className="py-3 px-3.5">NO UNIT</th>
             <th className="py-3 px-3.5">KATEGORI</th>
             <th className="py-3 px-3.5 text-center">DATE</th>
@@ -64,11 +64,20 @@ export default function ShiftLogTable({
               key={log.id}
               className="hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors text-slate-800 dark:text-white/90"
             >
-              <td className="py-3 px-3.5 text-center text-slate-400 dark:text-[#777777]">{log.no}</td>
+              <td className="py-3 px-3.5 text-center font-mono text-[10px] text-slate-500 dark:text-[#888888] whitespace-nowrap">
+                {log.logNumber && (log.logNumber.startsWith('F-') || log.logNumber.startsWith('R-'))
+                  ? log.logNumber
+                  : (log.no || log.logNumber || '-')}
+              </td>
               <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
                 <div className="flex items-center space-x-1.5">
                   <span>{log.unitCode}</span>
-                  {log.bypassValidation && (
+                  {log.unitCode === 'PENGISIAN' && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
+                      BBM Masuk
+                    </span>
+                  )}
+                  {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
                     <span
                       title={`Bypass: ${log.bypassReason || 'Admin authorized replacement'}`}
                       className="text-amber-500 dark:text-amber-400 cursor-help"
@@ -81,10 +90,10 @@ export default function ShiftLogTable({
               <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs">{log.category}</td>
               <td className="py-3 px-3.5 text-center text-slate-500 dark:text-[#888888]">{log.dateStr}</td>
               <td className="py-3 px-3.5 text-center text-slate-500 dark:text-[#888888]">{log.jamStr}</td>
-              <td className="py-3 px-3.5 text-right">{formatNumber(log.currentHm, 1)}</td>
-              <td className="py-3 px-3.5 text-right">{formatNumber(log.currentKm, 1)}</td>
+              <td className="py-3 px-3.5 text-right">{log.currentHm > 0 ? formatNumber(log.currentHm, 1) : '-'}</td>
+              <td className="py-3 px-3.5 text-right">{log.currentKm > 0 ? formatNumber(log.currentKm, 1) : '-'}</td>
               <td className="py-3 px-3.5 text-right font-bold text-slate-900 dark:text-white text-xs">
-                {formatNumber(log.volumeLiters, 1)}
+                {log.volumeLiters > 0 ? formatNumber(log.volumeLiters, 1) : '-'}
               </td>
               <td className="py-3 px-3.5 text-center">
                 <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-[#999999] border border-slate-200 dark:border-white/[0.08]">
@@ -92,8 +101,8 @@ export default function ShiftLogTable({
                 </span>
               </td>
               <td className="py-3 px-3.5 text-slate-700 dark:text-white/80 font-sans text-xs">{log.operator}</td>
-              <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-medium">
-                {log.fuelInLiters > 0 ? formatNumber(log.fuelInLiters, 1) : '-'}
+              <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
+                {log.fuelInLiters > 0 ? `+${formatNumber(log.fuelInLiters, 1)}` : '-'}
               </td>
               <td className="py-3 px-3.5 text-right text-slate-500 dark:text-[#888888]">
                 {formatNumber(log.totalFuelOut, 1)}

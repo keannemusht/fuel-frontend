@@ -50,7 +50,7 @@ export interface StorageTank {
 export interface FuelLog {
   id: string;
   logNumber: string;
-  no: number;
+  no: number | string;
   unitId: string;
   fuelmanId: string;
   tankId: string;

@@ -64,9 +64,9 @@ export default function DeleteConfirmModal({
           {/* Target Log Info Card */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] space-y-2.5 text-xs">
             <div className="flex justify-between items-center text-slate-500 dark:text-[#888888]">
-              <span>No Urut / Log Number:</span>
+              <span>ID Transaksi / Docket:</span>
               <span className="font-semibold text-slate-900 dark:text-slate-200 font-mono">
-                #{log.no ?? '-'} ({log.logNumber})
+                {log.logNumber || `#${log.no ?? '-'}`}
               </span>
             </div>
             <div className="flex justify-between items-center text-slate-500 dark:text-[#888888]">
