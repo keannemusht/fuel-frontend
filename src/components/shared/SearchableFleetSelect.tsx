@@ -70,9 +70,10 @@ export default function SearchableFleetSelect({
     return fleetOnly.filter(
       (u) =>
         u.unitCode.toLowerCase().includes(term) ||
+        (u.type && u.type.toLowerCase().includes(term)) ||
         (u.makeModel && u.makeModel.toLowerCase().includes(term)) ||
         (u.plateNumber && u.plateNumber.toLowerCase().includes(term)) ||
-        u.category.toLowerCase().includes(term)
+        (u.category && u.category.toLowerCase().includes(term))
     );
   }, [units, search]);
 
@@ -124,7 +125,7 @@ export default function SearchableFleetSelect({
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-500 dark:text-[#888] font-mono truncate">
-                    {selectedUnit.makeModel || selectedUnit.plateNumber || 'Fleet Unit'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
+                    {selectedUnit.type || selectedUnit.makeModel || selectedUnit.plateNumber || 'Fleet Unit'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
                   </p>
                 </div>
               </div>
@@ -231,7 +232,7 @@ export default function SearchableFleetSelect({
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-400 truncate">
-                            {u.makeModel || u.plateNumber || 'Fleet Vehicle'}
+                            {u.type || u.makeModel || u.plateNumber || 'Fleet Vehicle'}
                           </p>
                         </div>
                       </div>

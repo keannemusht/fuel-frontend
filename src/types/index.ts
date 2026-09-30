@@ -1,11 +1,20 @@
 export type Role = 'ADMIN' | 'FUELMAN' | 'MANAGEMENT';
 
 export type UnitCategory =
-  | 'HEAVY_EQUIPMENT'
+  | 'PRODUKSI'
+  | 'SUPPORT'
+  | 'CONTRACTOR'
+  | 'PLANT SERVICE'
+  | string;
+
+export type EquipmentType =
   | 'DUMP_TRUCK'
   | 'SUPPORT_VEHICLE'
+  | 'LIGHT_VEHICLE'
+  | 'EXCAVATOR'
+  | 'HEAVY_EQUIPMENT'
   | 'GENERATOR'
-  | 'LIGHT_VEHICLE';
+  | string;
 
 export type SyncStatus = 'PENDING' | 'SYNCED' | 'FAILED';
 
@@ -28,7 +37,8 @@ export interface Unit {
   id: string;
   unitCode: string;
   plateNumber: string | null;
-  category: UnitCategory;
+  category: string;
+  type: string;
   makeModel: string | null;
   lastKm: number;
   lastHm: number;
@@ -56,6 +66,7 @@ export interface FuelLog {
   tankId: string;
   unitCode: string;
   category: string;
+  type?: string;
   dateStr: string;
   jamStr: string;
   previousHm: number;

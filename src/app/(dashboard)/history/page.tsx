@@ -523,7 +523,7 @@ export default function HistoryPage() {
               <th className="py-3 px-3.5 text-center">{t('history.colNo', 'NO ID.')}</th>
               <th className="py-3 px-3.5">{t('history.colUnit', 'NO UNIT')}</th>
               <th className="py-3 px-3.5">{t('history.colCategory', 'KATEGORI')}</th>
-              <th className="py-3 px-3.5">{t('history.colMerk', 'MERK / TYPE')}</th>
+              <th className="py-3 px-3.5">{t('history.colType', 'TIPE')}</th>
               <th className="py-3 px-3.5 text-center">{t('history.colDate', 'DATE')}</th>
               <th className="py-3 px-3.5 text-center">{t('history.colTime', 'JAM')}</th>
               <th className="py-3 px-3.5 text-right">{t('history.colKm', 'KM')}</th>
@@ -588,9 +588,13 @@ export default function HistoryPage() {
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs">{log.category || '-'}</td>
+                  <td className="py-3 px-3.5 text-slate-700 dark:text-white/80 font-sans text-xs">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-medium bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-[#999] border border-slate-200 dark:border-white/[0.08]">
+                      {log.category || log.unit?.category || '-'}
+                    </span>
+                  </td>
                   <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs truncate max-w-[120px]">
-                    {log.unitCode === 'PENGISIAN' ? 'Storage Refill' : (log.unit?.makeModel || '-')}
+                    {log.unitCode === 'PENGISIAN' ? 'Storage Refill' : (log.type || log.unit?.type || log.unit?.makeModel || '-')}
                   </td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.dateStr}</td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.jamStr || '-'}</td>

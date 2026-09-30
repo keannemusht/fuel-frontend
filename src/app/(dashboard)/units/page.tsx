@@ -45,7 +45,8 @@ export default function UnitsPage() {
   // Form State
   const [unitCode, setUnitCode] = useState('');
   const [plateNumber, setPlateNumber] = useState('');
-  const [category, setCategory] = useState<UnitCategory>('DUMP_TRUCK');
+  const [category, setCategory] = useState<string>('PRODUKSI');
+  const [type, setType] = useState<string>('DUMP_TRUCK');
   const [makeModel, setMakeModel] = useState('');
   const [lastKm, setLastKm] = useState('0');
   const [lastHm, setLastHm] = useState('0');
@@ -126,7 +127,8 @@ export default function UnitsPage() {
     setEditingUnit(null);
     setUnitCode('');
     setPlateNumber('');
-    setCategory('DUMP_TRUCK');
+    setCategory('PRODUKSI');
+    setType('DUMP_TRUCK');
     setMakeModel('');
     setLastKm('0');
     setLastHm('0');
@@ -138,7 +140,8 @@ export default function UnitsPage() {
     setEditingUnit(u);
     setUnitCode(u.unitCode);
     setPlateNumber(u.plateNumber || '');
-    setCategory(u.category);
+    setCategory(u.category || 'PRODUKSI');
+    setType(u.type || 'DUMP_TRUCK');
     setMakeModel(u.makeModel || '');
     setLastKm(String(u.lastKm));
     setLastHm(String(u.lastHm));
@@ -158,6 +161,7 @@ export default function UnitsPage() {
       unitCode: unitCode.trim(),
       plateNumber: plateNumber.trim(),
       category,
+      type,
       makeModel: makeModel.trim(),
       lastKm: parseFloat(lastKm) || 0,
       lastHm: parseFloat(lastHm) || 0,
@@ -224,8 +228,8 @@ export default function UnitsPage() {
           <thead>
             <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
               <th className="py-3 px-4">{t('units.colCode', 'NO UNIT')}</th>
-              <th className="py-3 px-4">{t('units.colCategory', 'CATEGORY')}</th>
-              <th className="py-3 px-4">{t('units.colModel', 'MODEL / SPEC')}</th>
+              <th className="py-3 px-4">{t('units.colCategory', 'KATEGORI')}</th>
+              <th className="py-3 px-4">{t('units.colType', 'TIPE')}</th>
               <th className="py-3 px-4">{t('units.colPlate', 'PLATE NUMBER')}</th>
               <th className="py-3 px-4 text-right">{t('units.colLastKm', 'LAST KM')}</th>
               <th className="py-3 px-4 text-right">{t('units.colLastHm', 'LAST HM')}</th>
@@ -252,11 +256,11 @@ export default function UnitsPage() {
                 <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors text-slate-800 dark:text-white/90">
                   <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">{u.unitCode}</td>
                   <td className="py-3 px-4 text-slate-500 dark:text-[#888888] font-sans">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-[#999] border border-slate-200 dark:border-white/[0.08]">
-                      {u.category}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-medium bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-[#999] border border-slate-200 dark:border-white/[0.08]">
+                      {u.category || 'PRODUKSI'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-700 dark:text-white/80 font-sans text-xs">{u.makeModel || '-'}</td>
+                  <td className="py-3 px-4 text-slate-700 dark:text-white/80 font-sans text-xs">{u.type || u.makeModel || '-'}</td>
                   <td className="py-3 px-4 text-slate-500 dark:text-[#777]">{u.plateNumber || '-'}</td>
                   <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-white">{formatNumber(u.lastKm, 1)} KM</td>
                   <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-white">{formatNumber(u.lastHm, 1)} HRS</td>
@@ -425,21 +429,40 @@ export default function UnitsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-slate-500 dark:text-[#888888] font-medium block mb-1">
-                      {t('units.categoryLabel', 'Category')}
+                      {t('units.categoryLabel', 'Kategori')}
                     </label>
                     <select
                       value={category}
-                      onChange={(e) => setCategory(e.target.value as UnitCategory)}
+                      onChange={(e) => setCategory(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white font-mono focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
                     >
-                      <option value="DUMP_TRUCK">DUMP TRUCK</option>
-                      <option value="HEAVY_EQUIPMENT">HEAVY EQUIPMENT</option>
-                      <option value="SUPPORT_VEHICLE">SUPPORT VEHICLE</option>
-                      <option value="GENERATOR">GENERATOR</option>
-                      <option value="LIGHT_VEHICLE">LIGHT VEHICLE</option>
+                      <option value="PRODUKSI">PRODUKSI</option>
+                      <option value="SUPPORT">SUPPORT</option>
+                      <option value="CONTRACTOR">CONTRACTOR</option>
+                      <option value="PLANT SERVICE">PLANT SERVICE</option>
                     </select>
                   </div>
 
+                  <div>
+                    <label className="text-slate-500 dark:text-[#888888] font-medium block mb-1">
+                      {t('units.typeLabel', 'Tipe')}
+                    </label>
+                    <select
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white font-mono focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
+                    >
+                      <option value="DUMP_TRUCK">DUMP TRUCK</option>
+                      <option value="SUPPORT_VEHICLE">SUPPORT VEHICLE</option>
+                      <option value="LIGHT_VEHICLE">LIGHT VEHICLE</option>
+                      <option value="EXCAVATOR">EXCAVATOR</option>
+                      <option value="HEAVY_EQUIPMENT">HEAVY EQUIPMENT</option>
+                      <option value="GENERATOR">GENERATOR</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-slate-500 dark:text-[#888888] font-medium block mb-1">
                       {t('units.plateLabel', 'Plate Number')}
@@ -452,19 +475,19 @@ export default function UnitsPage() {
                       className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white font-mono focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-slate-500 dark:text-[#888888] font-medium block mb-1">
-                    {t('units.modelLabel', 'Make / Model')}
-                  </label>
-                  <input
-                    type="text"
-                    value={makeModel}
-                    onChange={(e) => setMakeModel(e.target.value)}
-                    placeholder="e.g. Scania P460 CB 8x4"
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
-                  />
+                  <div>
+                    <label className="text-slate-500 dark:text-[#888888] font-medium block mb-1">
+                      {t('units.modelLabel', 'Model / Merk (Spec)')}
+                    </label>
+                    <input
+                      type="text"
+                      value={makeModel}
+                      onChange={(e) => setMakeModel(e.target.value)}
+                      placeholder="e.g. Scania P460 CB 8x4"
+                      className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
