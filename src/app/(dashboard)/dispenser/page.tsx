@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Unit, StorageTank, ShiftSummary } from '@/types';
@@ -28,45 +28,8 @@ import {
 import { formatNumber } from '@/lib/utils';
 import { toast } from 'react-toastify';
 
-// Get current WITA operational time (HH:mm)
-const getInitialWitaTime = (): string => {
-  try {
-    return new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Makassar',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(new Date());
-  } catch {
-    const d = new Date();
-    const h = String((d.getUTCHours() + 8) % 24).padStart(2, '0');
-    const m = String(d.getUTCMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
-  }
-};
-
-// Auto-detect operational shift based on WITA mining site time (06:00 - 18:00 WITA is SHIFT 1, else SHIFT 2)
-const getOperationalShift = (): string => {
-  try {
-    const witaHourStr = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Makassar',
-      hour: 'numeric',
-      hour12: false,
-    }).format(new Date());
-    const hour = parseInt(witaHourStr, 10);
-    return hour >= 6 && hour < 18 ? 'SHIFT 1' : 'SHIFT 2';
-  } catch {
-    const hour = (new Date().getUTCHours() + 8) % 24;
-    return hour >= 6 && hour < 18 ? 'SHIFT 1' : 'SHIFT 2';
-  }
-};
-
-// Calculate shift based on user input time (HH:mm)
-const getShiftFromTime = (timeStr?: string): string => {
-  if (!timeStr) return getOperationalShift();
-  const parts = timeStr.split(':');
-  const hour = parseInt(parts[0], 10);
-  if (isNaN(hour)) return getOperationalShift();
+// Auto-detect operational shift based on WITA mining site hour (06:00 - 18:00 WITA is SHIFT 1, else SHIFT 2)
+const getShiftFromHour = (hour: number): string => {
   return hour >= 6 && hour < 18 ? 'SHIFT 1' : 'SHIFT 2';
 };
 
@@ -81,8 +44,41 @@ export default function DispenserPage() {
   const [currentKm, setCurrentKm] = useState<string>('');
   const [currentHm, setCurrentHm] = useState<string>('');
   const [volumeLiters, setVolumeLiters] = useState<string>('');
-  const [jamStr, setJamStr] = useState<string>(() => getInitialWitaTime());
-  const computedShift = getShiftFromTime(jamStr);
+  
+  // Live Operational WITA Telemetry Clock (Asia/Makassar, UTC+8 - synced with header clock)
+  const [liveWitaTime, setLiveWitaTime] = useState<string>('');
+  const [liveWitaHour, setLiveWitaHour] = useState<number>(8);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      try {
+        setLiveWitaTime(
+          now.toLocaleTimeString('en-GB', {
+            timeZone: 'Asia/Makassar',
+            hour12: false,
+          })
+        );
+        const witaHourStr = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Makassar',
+          hour: 'numeric',
+          hour12: false,
+        }).format(now);
+        setLiveWitaHour(parseInt(witaHourStr, 10));
+      } catch {
+        const utcHour = now.getUTCHours();
+        const calcHour = (utcHour + 8) % 24;
+        setLiveWitaHour(calcHour);
+        setLiveWitaTime(now.toTimeString().split(' ')[0]);
+      }
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const computedShift = getShiftFromHour(liveWitaHour);
   const [operator, setOperator] = useState<string>('');
   const [fuelInLiters, setFuelInLiters] = useState<string>('0');
   const [bypassValidation, setBypassValidation] = useState<boolean>(false);
@@ -162,7 +158,6 @@ export default function DispenserPage() {
       setVolumeLiters('');
       setCurrentKm('');
       setCurrentHm('');
-      setJamStr(getInitialWitaTime());
       setBypassValidation(false);
       setBypassReason('');
 
@@ -263,7 +258,7 @@ export default function DispenserPage() {
       shift: computedShift,
       operator: operator.trim(),
       fuelInLiters: fuelIn,
-      jamStr: jamStr ? `${jamStr}:00` : undefined,
+      jamStr: liveWitaTime || undefined,
       bypassValidation,
       bypassReason: bypassValidation ? bypassReason : undefined,
     });
@@ -609,19 +604,28 @@ export default function DispenserPage() {
                     <Clock className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
                     <span>{lang === 'id' ? 'Jam (WITA)' : 'Time (WITA)'}</span>
                   </label>
-                  <div className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-[9px] font-mono text-slate-600 dark:text-[#888]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-[9px] font-mono text-slate-600 dark:text-[#888]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>{computedShift === 'SHIFT 1' ? 'Shift 1' : 'Shift 2'}</span>
                   </div>
                 </div>
-                <div className="relative">
-                  <input
-                    type="time"
-                    value={jamStr}
-                    onChange={(e) => setJamStr(e.target.value)}
-                    required
-                    className="w-full text-xs font-mono font-medium px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 focus:border-slate-400 dark:focus:border-white/30 focus:outline-none shadow-sm"
-                  />
+                <div className="flex items-center justify-between px-3.5 py-2.5 h-[41px] rounded-2xl bg-slate-100/70 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] shadow-sm select-none cursor-default">
+                  <div className="flex items-center space-x-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white tracking-wider">
+                      {liveWitaTime || '00:00:00'}
+                    </span>
+                    <span className="text-[10px] font-mono font-semibold text-slate-400 dark:text-[#777]">
+                      WITA
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-[9px] font-mono text-slate-500 dark:text-[#888] bg-slate-200/60 dark:bg-white/[0.06] px-2 py-0.5 rounded-md border border-slate-300/40 dark:border-white/[0.04]">
+                    <Clock className="w-2.5 h-2.5 text-slate-400 dark:text-[#777]" />
+                    <span>{lang === 'id' ? 'Otomatis' : 'Live Auto'}</span>
+                  </div>
                 </div>
               </div>
             </div>
