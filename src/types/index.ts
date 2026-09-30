@@ -5,15 +5,19 @@ export type UnitCategory =
   | 'SUPPORT'
   | 'CONTRACTOR'
   | 'PLANT SERVICE'
+  | 'PENGISIAN'
+  | 'SALDO AWAL'
   | string;
 
-export type EquipmentType =
+export type VehicleType =
+  | 'DOUBLE_TRAILER'
   | 'DUMP_TRUCK'
   | 'SUPPORT_VEHICLE'
   | 'LIGHT_VEHICLE'
-  | 'EXCAVATOR'
   | 'HEAVY_EQUIPMENT'
+  | 'EXCAVATOR'
   | 'GENERATOR'
+  | 'STORAGE_TANK'
   | string;
 
 export type SyncStatus = 'PENDING' | 'SYNCED' | 'FAILED';
@@ -39,7 +43,7 @@ export interface Unit {
   plateNumber: string | null;
   category: string;
   type: string;
-  makeModel: string | null;
+  makeModel?: string | null;
   lastKm: number;
   lastHm: number;
   isActive: boolean;
@@ -66,7 +70,7 @@ export interface FuelLog {
   tankId: string;
   unitCode: string;
   category: string;
-  type?: string;
+  type: string;
   dateStr: string;
   jamStr: string;
   previousHm: number;

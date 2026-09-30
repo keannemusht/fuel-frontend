@@ -26,12 +26,23 @@ interface HistoricalLogModalProps {
   defaultDate?: string;
 }
 
-const CATEGORIES: UnitCategory[] = [
+const OPERATIONAL_CATEGORIES = [
+  'PRODUKSI',
+  'SUPPORT',
+  'CONTRACTOR',
+  'PLANT SERVICE',
+  'PENGISIAN',
+];
+
+const VEHICLE_TYPES = [
+  'DOUBLE_TRAILER',
   'DUMP_TRUCK',
-  'HEAVY_EQUIPMENT',
   'SUPPORT_VEHICLE',
   'LIGHT_VEHICLE',
+  'HEAVY_EQUIPMENT',
+  'EXCAVATOR',
   'GENERATOR',
+  'STORAGE_TANK',
 ];
 
 export default function HistoricalLogModal({
@@ -46,7 +57,8 @@ export default function HistoricalLogModal({
   const [formData, setFormData] = useState({
     no: '',
     unitCode: '',
-    category: 'DUMP_TRUCK' as UnitCategory,
+    category: 'PRODUKSI',
+    type: 'DUMP_TRUCK',
     dateStr: defaultDate || new Date().toISOString().slice(0, 10),
     jamStr: '12:00',
     currentKm: '',
@@ -66,7 +78,8 @@ export default function HistoricalLogModal({
       setFormData({
         no: String(editingLog.no || ''),
         unitCode: editingLog.unitCode || '',
-        category: (editingLog.category as UnitCategory) || 'DUMP_TRUCK',
+        category: editingLog.category || 'PRODUKSI',
+        type: editingLog.type || (editingLog.unit as any)?.type || 'DUMP_TRUCK',
         dateStr: editingLog.dateStr || defaultDate || new Date().toISOString().slice(0, 10),
         jamStr: editingLog.jamStr || '12:00',
         currentKm: String(editingLog.currentKm || 0),
@@ -81,7 +94,8 @@ export default function HistoricalLogModal({
       setFormData({
         no: '',
         unitCode: '',
-        category: 'DUMP_TRUCK',
+        category: 'PRODUKSI',
+        type: 'DUMP_TRUCK',
         dateStr: defaultDate || new Date().toISOString().slice(0, 10),
         jamStr: '12:00',
         currentKm: '0',
@@ -121,6 +135,7 @@ export default function HistoricalLogModal({
         no: formData.no ? parseInt(formData.no, 10) : undefined,
         unitCode: formData.unitCode.trim(),
         category: formData.category,
+        type: formData.type,
         dateStr: formData.dateStr,
         jamStr: formData.jamStr,
         currentKm: parseFloat(formData.currentKm) || 0,
@@ -235,7 +250,7 @@ export default function HistoricalLogModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             {/* Unit Code */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-[#888888] mb-1">
@@ -245,7 +260,24 @@ export default function HistoricalLogModal({
                 type="text"
                 required
                 value={formData.unitCode}
-                onChange={(e) => setFormData({ ...formData, unitCode: e.target.value.toUpperCase() })}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  let autoType = formData.type;
+                  let autoCat = formData.category;
+                  if (!isEditing) {
+                    if (val.startsWith('PM')) {
+                      autoType = 'DOUBLE_TRAILER';
+                      autoCat = 'PRODUKSI';
+                    } else if (val.startsWith('GS') || val.startsWith('MTV') || val.startsWith('WT') || val.startsWith('FT')) {
+                      autoType = 'SUPPORT_VEHICLE';
+                      autoCat = 'SUPPORT';
+                    } else if (val.startsWith('LV') || val.startsWith('TR')) {
+                      autoType = 'LIGHT_VEHICLE';
+                      autoCat = 'SUPPORT';
+                    }
+                  }
+                  setFormData({ ...formData, unitCode: val, type: autoType, category: autoCat });
+                }}
                 placeholder="e.g. PM 401, GS 001, LV 504"
                 className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
               />
@@ -258,12 +290,30 @@ export default function HistoricalLogModal({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as UnitCategory })}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
               >
-                {CATEGORIES.map((cat) => (
+                {OPERATIONAL_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat} className="bg-white dark:bg-[#121212]">
                     {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-[#888888] mb-1">
+                Type
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
+              >
+                {VEHICLE_TYPES.map((t) => (
+                  <option key={t} value={t} className="bg-white dark:bg-[#121212]">
+                    {t}
                   </option>
                 ))}
               </select>

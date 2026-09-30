@@ -62,6 +62,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       name: t('nav.history', 'Monthly History'),
       href: '/history',
       icon: CalendarClock,
+      allowedRoles: ['ADMIN', 'MANAGEMENT'],
     },
     {
       name: t('nav.backdate', 'Backdate Input'),

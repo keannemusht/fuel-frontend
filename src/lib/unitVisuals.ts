@@ -89,7 +89,8 @@ export function getUnitVisualConfig(unitCode: string = '', category: string = ''
     let label = 'Truck';
     if (code.startsWith('WT')) label = 'Water Truck';
     else if (code.startsWith('FT')) label = 'Fuel Truck';
-    else if (code.startsWith('PM') || cat.includes('DUMP')) label = 'Dump Truck';
+    else if (code.startsWith('PM')) label = 'Double Trailer';
+    else if (cat.includes('DUMP')) label = 'Dump Truck';
 
     return {
       Icon: Truck,

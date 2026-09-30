@@ -3,13 +3,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 import { FuelLog, MonthlySummary } from '@/types';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import {
   CalendarClock,
   Calendar,
-  CalendarPlus,
   FileSpreadsheet,
   RefreshCw,
   Search,
@@ -21,11 +21,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
-  Plus,
   Pencil,
   Trash2,
 } from 'lucide-react';
-import Link from 'next/link';
 import { formatNumber } from '@/lib/utils';
 import SyncStatusBadge from '@/components/shared/SyncStatusBadge';
 import ExcelImportModal from '@/components/shared/ExcelImportModal';
@@ -66,10 +64,21 @@ const MONTH_NAMES_EN = [
 const AVAILABLE_YEARS = ['2024', '2025', '2026', '2027'];
 
 export default function HistoryPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const canManage = user?.role === 'ADMIN' || user?.role === 'MANAGEMENT';
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    if (user && user.role === 'FUELMAN') {
+      router.replace('/dispenser');
+    }
+  }, [user, router]);
+
+  if (user?.role === 'FUELMAN') {
+    return null;
+  }
 
   const now = new Date();
   const currentYearStr = String(now.getFullYear());
@@ -94,10 +103,6 @@ export default function HistoryPage() {
 
   const monthNames = lang === 'id' ? MONTH_NAMES_ID : MONTH_NAMES_EN;
 
-  const handleOpenCreate = () => {
-    setEditingLog(null);
-    setIsLogModalOpen(true);
-  };
 
   const handleOpenEdit = (log: FuelLog) => {
     setEditingLog(log);
@@ -183,30 +188,6 @@ export default function HistoryPage() {
     },
   });
 
-  // 4. Sync Master Sheet Mutation
-  const syncMasterMutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.post('/fuel/sync-master');
-      return res.data;
-    },
-    onSuccess: (data: any) => {
-      const successMsg = `Berhasil mensinkronkan ${data.data?.totalSynced || 0} data ke master sheet "${data.data?.targetSheet}"!`;
-      setSyncFeedback({
-        type: 'success',
-        message: successMsg,
-      });
-      toast.success(successMsg);
-      queryClient.invalidateQueries({ queryKey: ['monthlyFuelLogs'] });
-      queryClient.invalidateQueries({ queryKey: ['monthlySummary'] });
-      setTimeout(() => setSyncFeedback(null), 6000);
-    },
-    onError: (err: any) => {
-      const msg = err.response?.data?.error || err.message || 'Gagal sinkronisasi master log ke Google Sheets';
-      setSyncFeedback({ type: 'error', message: msg });
-      toast.error(msg);
-      setTimeout(() => setSyncFeedback(null), 8000);
-    },
-  });
 
 
 
@@ -294,40 +275,6 @@ export default function HistoryPage() {
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${syncMonthMutation.isPending ? 'animate-spin' : ''}`} />
             <span>{syncMonthMutation.isPending ? t('history.syncing', 'Syncing...') : t('history.syncMonth', 'Sync Month')}</span>
           </button>
-
-          {/* Action: Sync Master Log */}
-          {canManage && (
-            <button
-              onClick={() => syncMasterMutation.mutate()}
-              disabled={syncMasterMutation.isPending}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-sm disabled:opacity-50"
-              title="Sync all logs into master tab 'LOG FUEL MONITORING'"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-blue-500 dark:text-blue-400 ${syncMasterMutation.isPending ? 'animate-spin' : ''}`} />
-              <span>{syncMasterMutation.isPending ? t('history.syncing', 'Syncing...') : t('history.syncMaster', 'Sync Master Log')}</span>
-            </button>
-          )}
-
-          {/* Action: Input Backdate (Data Terlewat) */}
-          <Link
-            href="/backdate"
-            className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs shadow-sm shadow-amber-500/20 active:scale-95 transition-all"
-            title="Input data transaksi yang terlewat (Backdate) dengan aturan HM/KM"
-          >
-            <CalendarPlus className="w-3.5 h-3.5" />
-            <span>{t('history.inputBackdate', 'Input Backdate')}</span>
-          </Link>
-
-          {/* Action: Add Historical Entry */}
-          {canManage && (
-            <button
-              onClick={handleOpenCreate}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('history.addEntry', 'Add Entry')}</span>
-            </button>
-          )}
 
           {/* Action: Import Excel Data */}
           {canManage && (
@@ -523,7 +470,7 @@ export default function HistoryPage() {
               <th className="py-3 px-3.5 text-center">{t('history.colNo', 'NO ID.')}</th>
               <th className="py-3 px-3.5">{t('history.colUnit', 'NO UNIT')}</th>
               <th className="py-3 px-3.5">{t('history.colCategory', 'KATEGORI')}</th>
-              <th className="py-3 px-3.5">{t('history.colType', 'TIPE')}</th>
+              <th className="py-3 px-3.5">{t('history.colType', 'TYPE')}</th>
               <th className="py-3 px-3.5 text-center">{t('history.colDate', 'DATE')}</th>
               <th className="py-3 px-3.5 text-center">{t('history.colTime', 'JAM')}</th>
               <th className="py-3 px-3.5 text-right">{t('history.colKm', 'KM')}</th>
@@ -588,13 +535,9 @@ export default function HistoryPage() {
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-3.5 text-slate-700 dark:text-white/80 font-sans text-xs">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-medium bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-[#999] border border-slate-200 dark:border-white/[0.08]">
-                      {log.category || log.unit?.category || '-'}
-                    </span>
-                  </td>
+                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs">{log.category || '-'}</td>
                   <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs truncate max-w-[120px]">
-                    {log.unitCode === 'PENGISIAN' ? 'Storage Refill' : (log.type || log.unit?.type || log.unit?.makeModel || '-')}
+                    {log.unitCode === 'PENGISIAN' ? 'STORAGE_TANK' : (log.type || (log.unit as any)?.type || '-')}
                   </td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.dateStr}</td>
                   <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.jamStr || '-'}</td>
