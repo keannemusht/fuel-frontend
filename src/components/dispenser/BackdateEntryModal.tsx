@@ -39,6 +39,7 @@ export default function BackdateEntryModal({
   const [selectedTankId, setSelectedTankId] = useState<string>('');
   const [currentKm, setCurrentKm] = useState<string>('');
   const [currentHm, setCurrentHm] = useState<string>('');
+  const [currentKwh, setCurrentKwh] = useState<string>('');
   const [volumeLiters, setVolumeLiters] = useState<string>('');
   const [shift, setShift] = useState<string>('SHIFT 1');
   const [operator, setOperator] = useState<string>('');
@@ -93,6 +94,10 @@ export default function BackdateEntryModal({
 
   const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
   const selectedTank = tanks.find((t) => t.id === selectedTankId) || null;
+
+  const unitHasKm = selectedUnit ? (selectedUnit.hasKm ?? true) : true;
+  const unitHasHm = selectedUnit ? (selectedUnit.hasHm ?? true) : true;
+  const unitHasKwh = selectedUnit ? (selectedUnit.hasKwh ?? false) : false;
 
   // Dispense mutation
   const dispenseMutation = useMutation({
@@ -158,17 +163,25 @@ export default function BackdateEntryModal({
     const vol = parseFloat(volumeLiters) || 0;
     const km = parseFloat(currentKm) || 0;
     const hm = parseFloat(currentHm) || 0;
+    const kwh = parseFloat(currentKwh) || 0;
     const fuelIn = parseFloat(fuelInLiters) || 0;
 
-    if (km < 0) {
+    if (unitHasKm && km < 0) {
       const msg = 'Nilai Odometer (KM) tidak boleh negatif (< 0)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
-    if (hm < 0) {
+    if (unitHasHm && hm < 0) {
       const msg = 'Nilai Hour Meter (HM) tidak boleh negatif (< 0)';
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (unitHasKwh && kwh < 0) {
+      const msg = 'Nilai KWH Genset tidak boleh negatif (< 0)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
@@ -191,8 +204,9 @@ export default function BackdateEntryModal({
     dispenseMutation.mutate({
       unitId: selectedUnitId,
       tankId: selectedTankId,
-      currentKm: km,
-      currentHm: hm,
+      currentKm: unitHasKm ? km : undefined,
+      currentHm: unitHasHm ? hm : undefined,
+      currentKwh: unitHasKwh ? kwh : undefined,
       volumeLiters: vol,
       shift,
       operator: operator.trim(),
@@ -346,45 +360,69 @@ export default function BackdateEntryModal({
               </div>
             </div>
 
-            {/* Row 3: KM, HM, and Dispensing Liters */}
+            {/* Row 3: Dynamic KM, HM, KWH, and Dispensing Liters */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1">
-                  Current KM
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="e.g. 15420"
-                  value={currentKm}
-                  onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'Minus') e.preventDefault();
-                  }}
-                  onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
-                  className="w-full px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
-                />
-              </div>
+              {unitHasKm && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1">
+                    Current KM {unitHasKm ? '*' : ''}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 15420"
+                    value={currentKm}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
+                    className="w-full px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1">
-                  Current HM
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="e.g. 2350.5"
-                  value={currentHm}
-                  onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'Minus') e.preventDefault();
-                  }}
-                  onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
-                  className="w-full px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
-                />
-              </div>
+              {unitHasHm && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1">
+                    Current HM {unitHasHm ? '*' : ''}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 2350.5"
+                    value={currentHm}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
+                    className="w-full px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+              )}
 
-              <div>
+              {unitHasKwh && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1">
+                    Daya Genset (KWH) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 1520.0"
+                    value={currentKwh}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentKwh(e.target.value.replace(/-/g, ''))}
+                    className="w-full px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div className={!unitHasKm && !unitHasHm && !unitHasKwh ? 'md:col-span-3' : ''}>
                 <label className="block text-xs font-medium text-slate-500 dark:text-[#888888] mb-1 flex items-center gap-1.5">
                   <Fuel className="w-3.5 h-3.5 text-slate-400 dark:text-white/60" />
                   Volume (Liters) *

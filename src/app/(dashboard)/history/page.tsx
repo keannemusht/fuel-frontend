@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,10 @@ import {
   Activity,
   Pencil,
   Trash2,
+  SlidersHorizontal,
+  ChevronDown,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import SyncStatusBadge from '@/components/shared/SyncStatusBadge';
@@ -89,8 +93,30 @@ export default function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [shiftFilter, setShiftFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 25;
+
+  // Close filter dropdown on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -102,7 +128,6 @@ export default function HistoryPage() {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const monthNames = lang === 'id' ? MONTH_NAMES_ID : MONTH_NAMES_EN;
-
 
   const handleOpenEdit = (log: FuelLog) => {
     setEditingLog(log);
@@ -145,6 +170,7 @@ export default function HistoryPage() {
   const {
     data: logs = [],
     isLoading: isLoadingLogs,
+    isFetching: isFetchingLogs,
     refetch: refetchLogs,
   } = useQuery<FuelLog[]>({
     queryKey: ['monthlyFuelLogs', monthStr],
@@ -397,70 +423,283 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* Search & Filter Toolbar matching /dispenser form & inputs */}
-      <div className="framer-card p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search input with rounded-full pill */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666666]" />
-          <input
-            type="text"
-            placeholder={t('history.searchPlaceholder', 'Search unit code, operator, fuelman, or category...')}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-9 pr-4 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#666666] focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition font-mono"
-          />
-        </div>
+      {/* Search & Filter Toolbar */}
+      {(() => {
+        const isFiltered = shiftFilter !== 'ALL' || statusFilter !== 'ALL';
+        const activeFilterCount = (shiftFilter !== 'ALL' ? 1 : 0) + (statusFilter !== 'ALL' ? 1 : 0);
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Shift filter pill */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] px-3 py-1.5 rounded-full text-xs text-slate-700 dark:text-white">
-            <span className="text-slate-400 dark:text-[#888888]">{t('history.shiftFilter', 'Shift')}:</span>
-            <select
-              value={shiftFilter}
-              onChange={(e) => {
-                setShiftFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent font-medium text-slate-800 dark:text-white focus:outline-none cursor-pointer"
-            >
-              <option value="ALL" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.allShifts', 'ALL SHIFTS')}</option>
-              <option value="SHIFT 1" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.shift1', 'SHIFT 1 (Day)')}</option>
-              <option value="SHIFT 2" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.shift2', 'SHIFT 2 (Night)')}</option>
-            </select>
+        return (
+          <div className="space-y-2.5">
+            <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-20">
+              {/* Search input with rounded-full pill */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666666]" />
+                <input
+                  type="text"
+                  placeholder={t('history.searchPlaceholder', 'Search unit code, operator, fuelman, or category...')}
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-9 pr-9 py-2 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#666666] focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition font-mono"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                    title="Hapus pencarian"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Action Controls: Dedicated Button Filter */}
+              <div className="flex items-center space-x-2 self-end md:self-auto">
+                {/* Dedicated Button Filter with Popover */}
+                <div className="relative" ref={filterRef}>
+                  <button
+                    onClick={() => setShowFilterDropdown((prev) => !prev)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full border text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                      activeFilterCount > 0
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-md'
+                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>{t('common.filter', 'Filter')}</span>
+                    {activeFilterCount > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                        showFilterDropdown ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Filter Popover Dropdown (100% Opaque Solid Card) */}
+                  {showFilterDropdown && (
+                    <div className="filter-dropdown-card absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl p-4 z-50 animate-in fade-in duration-150">
+                      {/* Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                        <div className="flex items-center space-x-2 text-slate-900 dark:text-white font-semibold text-xs">
+                          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-white/60" />
+                          <span>{lang === 'id' ? 'Filter Riwayat' : 'Filter History'}</span>
+                        </div>
+                        {activeFilterCount > 0 && (
+                          <button
+                            onClick={() => {
+                              setShiftFilter('ALL');
+                              setStatusFilter('ALL');
+                              setCurrentPage(1);
+                            }}
+                            className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Reset</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-4 py-3">
+                        {/* Shift Filter */}
+                        <div>
+                          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-2">
+                            {t('history.shiftFilter', 'Shift Kerja')}
+                          </span>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <button
+                              onClick={() => {
+                                setShiftFilter('ALL');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                                shiftFilter === 'ALL'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              {t('history.allShifts', 'Semua')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShiftFilter('SHIFT 1');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                                shiftFilter === 'SHIFT 1'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              Shift 1
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShiftFilter('SHIFT 2');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                                shiftFilter === 'SHIFT 2'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              Shift 2
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Sync Status Filter */}
+                        <div>
+                          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-2">
+                            {t('history.syncFilter', 'Status Sinkronisasi')}
+                          </span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              onClick={() => {
+                                setStatusFilter('ALL');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                                statusFilter === 'ALL'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              {t('history.allStatus', 'Semua Status')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter('SYNCED');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                                statusFilter === 'SYNCED'
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-500/30'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span>{t('history.synced', 'SYNCED')}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter('PENDING');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                                statusFilter === 'PENDING'
+                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold border border-amber-300 dark:border-amber-500/30'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                              <span>{t('history.pending', 'PENDING')}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter('FAILED');
+                                setCurrentPage(1);
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                                statusFilter === 'FAILED'
+                                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 font-semibold border border-rose-300 dark:border-rose-500/30'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                              <span>{t('history.failed', 'FAILED')}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-400 dark:text-[#666]">
+                          {filteredLogs.length} {lang === 'id' ? 'transaksi' : 'records'}
+                        </span>
+                        <button
+                          onClick={() => setShowFilterDropdown(false)}
+                          className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white text-xs font-semibold transition"
+                        >
+                          {lang === 'id' ? 'Selesai' : 'Done'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Active Filter Chips / Badges */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5 animate-in fade-in duration-150">
+                <span className="text-[11px] text-slate-400 dark:text-[#666] font-medium">
+                  {lang === 'id' ? 'Filter aktif:' : 'Active filters:'}
+                </span>
+
+                {shiftFilter !== 'ALL' && (
+                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                    <span>
+                      {t('history.shiftFilter', 'Shift')}:{' '}
+                      <strong className="font-semibold">{shiftFilter}</strong>
+                    </span>
+                    <button
+                      onClick={() => {
+                        setShiftFilter('ALL');
+                        setCurrentPage(1);
+                      }}
+                      className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                      title="Hapus filter shift"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+
+                {statusFilter !== 'ALL' && (
+                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                    <span>
+                      {t('history.syncFilter', 'Sync')}:{' '}
+                      <strong className="font-semibold">{statusFilter}</strong>
+                    </span>
+                    <button
+                      onClick={() => {
+                        setStatusFilter('ALL');
+                        setCurrentPage(1);
+                      }}
+                      className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                      title="Hapus filter status sync"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+
+                <button
+                  onClick={() => {
+                    setShiftFilter('ALL');
+                    setStatusFilter('ALL');
+                    setCurrentPage(1);
+                  }}
+                  className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline ml-1"
+                >
+                  {lang === 'id' ? 'Hapus Semua' : 'Clear All'}
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* Sync filter pill */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] px-3 py-1.5 rounded-full text-xs text-slate-700 dark:text-white">
-            <span className="text-slate-400 dark:text-[#888888]">{t('history.syncFilter', 'Sync')}:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent font-medium text-slate-800 dark:text-white focus:outline-none cursor-pointer"
-            >
-              <option value="ALL" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.allStatus', 'ALL STATUS')}</option>
-              <option value="SYNCED" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.synced', 'SYNCED')}</option>
-              <option value="PENDING" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.pending', 'PENDING')}</option>
-              <option value="FAILED" className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">{t('history.failed', 'FAILED')}</option>
-            </select>
-          </div>
-
-          {/* Refresh button pill */}
-          <button
-            onClick={() => refetchLogs()}
-            className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-white/70 transition"
-            title="Refresh logs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* 15 Operational Columns Table matching ShiftLogTable.tsx */}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xl">
@@ -520,11 +759,6 @@ export default function HistoryPage() {
                   <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
                     <div className="flex items-center space-x-1.5">
                       <span>{log.unitCode}</span>
-                      {log.unitCode === 'PENGISIAN' && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
-                          BBM Masuk
-                        </span>
-                      )}
                       {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
                         <span
                           title={`Bypass: ${log.bypassReason || 'Admin authorized'}`}
@@ -546,10 +780,14 @@ export default function HistoryPage() {
                   <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
                     {log.fuelInLiters > 0 ? `+${formatNumber(log.fuelInLiters, 1)}` : '-'}
                   </td>
-                  <td className="py-3 px-3.5 text-right font-bold text-slate-900 dark:text-white text-xs">
-                    {log.volumeLiters > 0 ? formatNumber(log.volumeLiters, 1) : '-'}
+                  <td className="py-3 px-3.5 text-slate-800 dark:text-white/80 font-sans text-xs">
+                    <div>{log.operator}</div>
+                    {log.currentKwh && log.currentKwh > 0 && !log.operator.includes('Kwh') && (
+                      <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 block font-normal">
+                        ({formatNumber(log.currentKwh, 1)} Kwh)
+                      </span>
+                    )}
                   </td>
-                  <td className="py-3 px-3.5 text-slate-800 dark:text-white/80 font-sans text-xs">{log.operator}</td>
                   <td className="py-3 px-3.5 text-center">
                     <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-[#999999] border border-slate-200 dark:border-white/[0.08]">
                       {log.shift}

@@ -9,15 +9,23 @@ interface TankGaugeProps {
   tanks: StorageTank[];
   selectedTankId: string;
   onSelectTank: (id: string) => void;
+  title?: string;
+  icon?: React.ReactNode;
 }
 
-export default function TankGauge({ tanks, selectedTankId, onSelectTank }: TankGaugeProps) {
+export default function TankGauge({
+  tanks,
+  selectedTankId,
+  onSelectTank,
+  title = 'Source Fuel Storage Tank',
+  icon,
+}: TankGaugeProps) {
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
-          <Database className="w-3.5 h-3.5 text-cyan-500" />
-          <span>Source Fuel Storage Tank</span>
+          {icon || <Database className="w-3.5 h-3.5 text-cyan-500" />}
+          <span>{title}</span>
         </label>
       </div>
 

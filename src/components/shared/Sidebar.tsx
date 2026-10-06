@@ -98,47 +98,47 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const renderContent = (collapsed: boolean) => (
     <div className="flex flex-col justify-between h-full overflow-hidden">
-      <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Brand Header */}
-        <div
-          className={`p-4 border-b border-slate-200 dark:border-white/[0.06] flex items-center ${
-            collapsed ? 'justify-center' : 'justify-between'
-          }`}
-        >
-          <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
-              <Image
-                src="/img/BATARA.png"
-                alt="Batara Logo"
-                width={36}
-                height={36}
-                className="h-8 w-auto object-contain"
-                priority
-              />
-            </div>
-            {!collapsed && (
-              <div className="truncate">
-                <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white block leading-tight">
-                  BATARA
-                </span>
-                <p className="text-[11px] text-slate-500 dark:text-[#888888] font-medium leading-tight mt-0.5">
-                  Fuel System
-                </p>
-              </div>
-            )}
+      {/* Brand Header - Seamlessly aligned with main Header bar (h-16) */}
+      <div
+        className={`h-16 w-full px-4 border-b border-slate-200 dark:border-white/[0.08] flex items-center shrink-0 ${
+          collapsed ? 'justify-center' : 'justify-between'
+        }`}
+      >
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
+            <Image
+              src="/img/BATARA.png"
+              alt="Batara Logo"
+              width={36}
+              height={36}
+              className="h-8 w-auto object-contain"
+              priority
+            />
           </div>
-
-          {/* Close button for mobile drawer */}
-          {onClose && !collapsed && (
-            <button
-              onClick={onClose}
-              className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          {!collapsed && (
+            <div className="truncate">
+              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white block leading-tight">
+                BATARA
+              </span>
+              <p className="text-[11px] text-slate-500 dark:text-[#888888] font-medium leading-tight mt-0.5">
+                Fuel System
+              </p>
+            </div>
           )}
         </div>
 
+        {/* Close button for mobile drawer */}
+        {onClose && !collapsed && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
         {/* Navigation Items */}
         <nav className="p-3 mt-2 space-y-1 flex-1">
           {!collapsed && (
@@ -225,7 +225,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           onClick={toggleCollapse}
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          className="hidden lg:flex items-center justify-center absolute -right-3.5 top-6 w-7 h-7 rounded-full bg-white dark:bg-[#1A1A1A] text-slate-700 dark:text-white border border-slate-300 dark:border-white/20 shadow-md hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer"
+          className="hidden lg:flex items-center justify-center absolute -right-3.5 top-[18px] w-7 h-7 rounded-full bg-white dark:bg-[#1A1A1A] text-slate-700 dark:text-white border border-slate-300 dark:border-white/20 shadow-md hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer"
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5" />

@@ -350,6 +350,7 @@ export default function SummaryDashboardPage() {
                     ? (tank.currentStockLiters / tank.capacityLiters) * 100
                     : 0;
                 const isAlert = tank.currentStockLiters <= tank.minStockAlertLiters;
+                const isLow = isAlert || percent <= 15;
                 const ullage = Math.max(0, tank.capacityLiters - tank.currentStockLiters);
 
                 return (
@@ -367,16 +368,27 @@ export default function SummaryDashboardPage() {
                           <span className="text-xs text-slate-600 dark:text-[#999]">
                             {tank.name}
                           </span>
+                          {tank.tankType === 'MOBILE_TRUCK' || tank.tankCode.includes('FT') ? (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              Fuel Truck
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                              Stationary
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] font-mono text-slate-400">
                           {tank.fuelType}
                         </span>
                       </div>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                          isAlert
-                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                            : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border transition-colors ${
+                          isLow
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                            : percent <= 30
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                         }`}
                       >
                         {percent.toFixed(1)}% {t('dash.filled', 'Terisi')}
@@ -388,16 +400,18 @@ export default function SummaryDashboardPage() {
                       <div className="w-full bg-slate-200 dark:bg-white/10 h-3 rounded-full overflow-hidden p-0.5">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            percent > 25
-                              ? 'bg-emerald-500 dark:bg-emerald-400'
-                              : 'bg-rose-500'
+                            isLow
+                              ? 'bg-rose-500'
+                              : percent <= 30
+                              ? 'bg-amber-500'
+                              : 'bg-gradient-to-r from-emerald-500 to-cyan-500'
                           }`}
                           style={{ width: `${Math.min(100, percent)}%` }}
                         />
                       </div>
                       <div className="flex justify-between text-[9px] font-mono text-slate-400">
                         <span>0 L</span>
-                        <span>25.000 L</span>
+                        <span>{formatNumber(tank.capacityLiters / 2, 0)} L</span>
                         <span>{formatNumber(tank.capacityLiters, 0)} L</span>
                       </div>
                     </div>

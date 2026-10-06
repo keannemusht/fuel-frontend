@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import 'react-toastify/dist/ReactToastify.css';
 import './globals.css';
 import QueryProvider from '@/components/providers/QueryProvider';
 import { AuthProvider } from '@/components/providers/AuthProvider';

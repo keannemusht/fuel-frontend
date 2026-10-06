@@ -34,6 +34,8 @@ import {
   CheckCheck,
   Sun,
   Moon,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -96,8 +98,32 @@ export default function BackdatePage() {
   const [unitSearch, setUnitSearch] = useState<string>('');
   const unitComboboxRef = useRef<HTMLDivElement>(null);
 
-  // Table Search Filter
+  // Table Search & Filter State
   const [tableSearch, setTableSearch] = useState<string>('');
+  const [tableShiftFilter, setTableShiftFilter] = useState<string>('ALL');
+  const [tableStatusFilter, setTableStatusFilter] = useState<string>('ALL');
+  const [showTableFilterDropdown, setShowTableFilterDropdown] = useState<boolean>(false);
+  const tableFilterRef = useRef<HTMLDivElement>(null);
+
+  // Close table filter dropdown on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tableFilterRef.current && !tableFilterRef.current.contains(event.target as Node)) {
+        setShowTableFilterDropdown(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowTableFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Bypass State (Admin Only)
   const [bypassValidation, setBypassValidation] = useState<boolean>(false);
@@ -194,19 +220,24 @@ export default function BackdatePage() {
     enabled: Boolean(dateStr),
   });
 
-  // Filtered Date Logs for search filter
+  // Filtered Date Logs for search & filter
   const filteredDateLogs = useMemo(() => {
-    if (!tableSearch.trim()) return dateLogs;
-    const term = tableSearch.toLowerCase();
-    return dateLogs.filter(
-      (l) =>
+    return dateLogs.filter((l) => {
+      const term = tableSearch.trim().toLowerCase();
+      const matchesSearch =
+        !term ||
         l.unitCode.toLowerCase().includes(term) ||
         l.operator.toLowerCase().includes(term) ||
         l.fuelmanName.toLowerCase().includes(term) ||
         l.shift.toLowerCase().includes(term) ||
-        l.category.toLowerCase().includes(term)
-    );
-  }, [dateLogs, tableSearch]);
+        l.category.toLowerCase().includes(term);
+
+      const matchesShift = tableShiftFilter === 'ALL' || l.shift === tableShiftFilter;
+      const matchesStatus = tableStatusFilter === 'ALL' || l.syncStatus === tableStatusFilter;
+
+      return matchesSearch && matchesShift && matchesStatus;
+    });
+  }, [dateLogs, tableSearch, tableShiftFilter, tableStatusFilter]);
 
   // Summary Metrics on Date
   const dateTotalVolume = useMemo(() => {
@@ -1445,29 +1476,246 @@ export default function BackdatePage() {
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Table Search Filter */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari unit / operator..."
-                value={tableSearch}
-                onChange={(e) => setTableSearch(e.target.value)}
-                className="text-xs pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 w-44 sm:w-56"
-              />
-            </div>
+          {/* Table Search & Controls with Dedicated Button Filter */}
+          {(() => {
+            const isTableFiltered = tableShiftFilter !== 'ALL' || tableStatusFilter !== 'ALL';
+            const activeTableFilterCount = (tableShiftFilter !== 'ALL' ? 1 : 0) + (tableStatusFilter !== 'ALL' ? 1 : 0);
+
+            return (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 relative z-20">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari unit / operator..."
+                    value={tableSearch}
+                    onChange={(e) => setTableSearch(e.target.value)}
+                    className="text-xs pl-8 pr-7 py-1.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 w-full sm:w-52"
+                  />
+                  {tableSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTableSearch('')}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                      title="Hapus pencarian"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-1.5">
+                  {/* Dedicated Button Filter with Popover */}
+                  <div className="relative" ref={tableFilterRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowTableFilterDropdown((prev) => !prev)}
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                        activeTableFilterCount > 0
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-md'
+                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80'
+                      }`}
+                    >
+                      <SlidersHorizontal className="w-3 h-3" />
+                      <span>{t('common.filter', 'Filter')}</span>
+                      {activeTableFilterCount > 0 && (
+                        <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+                          {activeTableFilterCount}
+                        </span>
+                      )}
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform duration-200 ${
+                          showTableFilterDropdown ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* Filter Popover Dropdown (100% Solid Opaque Card) */}
+                    {showTableFilterDropdown && (
+                      <div className="filter-dropdown-card absolute right-0 top-full mt-2 w-72 rounded-2xl p-4 z-50 animate-in fade-in duration-150">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/[0.06]">
+                          <div className="flex items-center space-x-1.5 text-slate-900 dark:text-white font-semibold text-xs">
+                            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-white/60" />
+                            <span>{lang === 'id' ? 'Filter Transaksi' : 'Filter Records'}</span>
+                          </div>
+                          {activeTableFilterCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTableShiftFilter('ALL');
+                                setTableStatusFilter('ALL');
+                              }}
+                              className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition"
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" />
+                              <span>Reset</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-3.5 py-3">
+                          {/* Shift Filter */}
+                          <div>
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-1.5">
+                              {lang === 'id' ? 'Shift Kerja' : 'Work Shift'}
+                            </span>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setTableShiftFilter('ALL')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
+                                  tableShiftFilter === 'ALL'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                {lang === 'id' ? 'Semua' : 'All'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTableShiftFilter('SHIFT 1')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
+                                  tableShiftFilter === 'SHIFT 1'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                Shift 1
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTableShiftFilter('SHIFT 2')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
+                                  tableShiftFilter === 'SHIFT 2'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                Shift 2
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Sync Status Filter */}
+                          <div>
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-1.5">
+                              {lang === 'id' ? 'Status Sinkronisasi' : 'Sync Status'}
+                            </span>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setTableStatusFilter('ALL')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
+                                  tableStatusFilter === 'ALL'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                {lang === 'id' ? 'Semua' : 'All'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTableStatusFilter('SYNCED')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center justify-center space-x-1 transition-all ${
+                                  tableStatusFilter === 'SYNCED'
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-500/30'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <span>SYNCED</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTableStatusFilter('PENDING')}
+                                className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center justify-center space-x-1 transition-all ${
+                                  tableStatusFilter === 'PENDING'
+                                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold border border-amber-300 dark:border-amber-500/30'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                <span>PENDING</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
+                            {filteredDateLogs.length} {lang === 'id' ? 'entri' : 'records'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowTableFilterDropdown(false)}
+                            className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white text-xs font-semibold transition"
+                          >
+                            {lang === 'id' ? 'Selesai' : 'Done'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Active Filter Chips for Backdate Table */}
+        {(tableShiftFilter !== 'ALL' || tableStatusFilter !== 'ALL') && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 animate-in fade-in duration-150">
+            <span className="text-[11px] text-slate-400 dark:text-[#666] font-medium">
+              {lang === 'id' ? 'Filter tabel aktif:' : 'Active table filters:'}
+            </span>
+
+            {tableShiftFilter !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                <span>
+                  Shift: <strong className="font-semibold">{tableShiftFilter}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTableShiftFilter('ALL')}
+                  className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                  title="Hapus filter shift"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
+
+            {tableStatusFilter !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                <span>
+                  Sync: <strong className="font-semibold">{tableStatusFilter}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTableStatusFilter('ALL')}
+                  className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                  title="Hapus filter status"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
 
             <button
               type="button"
-              onClick={() => refetchDateLogs()}
-              className="px-3 py-1.5 rounded-xl text-xs text-slate-600 hover:text-slate-900 dark:text-[#999] dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] transition-all flex items-center space-x-1"
+              onClick={() => {
+                setTableShiftFilter('ALL');
+                setTableStatusFilter('ALL');
+              }}
+              className="text-[10px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline ml-1"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Refresh</span>
+              {lang === 'id' ? 'Hapus Semua' : 'Clear All'}
             </button>
           </div>
-        </div>
+        )}
 
         {filteredDateLogs.length === 0 ? (
           <div className="p-8 rounded-2xl bg-slate-50 dark:bg-[#121212] border border-dashed border-slate-200 dark:border-white/[0.08] text-center text-xs text-slate-400">

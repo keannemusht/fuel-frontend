@@ -72,9 +72,9 @@ export default function ShiftLogTable({
               <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
                 <div className="flex items-center space-x-1.5">
                   <span>{log.unitCode}</span>
-                  {log.unitCode === 'PENGISIAN' && (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
-                      BBM Masuk
+                  {log.sourceType === 'FUEL_TRUCK' && (
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-normal" title="Dispensed via Mobile Fuel Truck">
+                      FT
                     </span>
                   )}
                   {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
@@ -100,7 +100,14 @@ export default function ShiftLogTable({
                   {log.shift}
                 </span>
               </td>
-              <td className="py-3 px-3.5 text-slate-700 dark:text-white/80 font-sans text-xs">{log.operator}</td>
+              <td className="py-3 px-3.5 text-slate-700 dark:text-white/80 font-sans text-xs">
+                <div>{log.operator}</div>
+                {log.currentKwh && log.currentKwh > 0 && !log.operator.includes('Kwh') && (
+                  <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 block font-normal">
+                    ({formatNumber(log.currentKwh, 1)} Kwh)
+                  </span>
+                )}
+              </td>
               <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
                 {log.fuelInLiters > 0 ? `+${formatNumber(log.fuelInLiters, 1)}` : '-'}
               </td>

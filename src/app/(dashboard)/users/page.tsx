@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { User, Role } from '@/types';
@@ -22,6 +22,9 @@ import {
   Fuel,
   UserCheck,
   UserX,
+  SlidersHorizontal,
+  ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
@@ -38,6 +41,28 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | Role>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -55,7 +80,6 @@ export default function UsersPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
 
   // Fetch Users
   const { data: users = [], isLoading, isFetching, refetch } = useQuery<User[]>({
@@ -72,9 +96,7 @@ export default function UsersPage() {
   });
 
   const showNotification = (msg: string) => {
-    setSuccessToast(msg);
     toast.success(msg);
-    setTimeout(() => setSuccessToast(null), 4000);
   };
 
   // Create User Mutation
@@ -253,16 +275,12 @@ export default function UsersPage() {
   const fuelmanCount = users.filter((u) => u.role === 'FUELMAN').length;
   const managementCount = users.filter((u) => u.role === 'MANAGEMENT').length;
 
+  // Active Filter Helper
+  const isFiltered = roleFilter !== 'ALL' || statusFilter !== 'ALL';
+  const activeFilterCount = (roleFilter !== 'ALL' ? 1 : 0) + (statusFilter !== 'ALL' ? 1 : 0);
+
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
-      {successToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-2 px-4 py-3 rounded-2xl bg-[#111111] border border-emerald-500/40 text-emerald-400 text-xs shadow-2xl animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{successToast}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -333,98 +351,246 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-slate-400 dark:text-[#666]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('users.searchPlaceholder')}
-            className="w-full text-xs pl-9 pr-4 py-2.5 rounded-full bg-white dark:bg-[#0D0D0D] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#666] focus:border-slate-400 dark:focus:border-white/30 focus:outline-none font-mono shadow-sm"
-          />
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
-          <div className="flex items-center p-1 rounded-full bg-slate-100 dark:bg-[#0D0D0D] border border-slate-200 dark:border-white/[0.08] text-[11px]">
-            <button
-              onClick={() => setRoleFilter('ALL')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                roleFilter === 'ALL'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.allRoles')}
-            </button>
-            <button
-              onClick={() => setRoleFilter('ADMIN')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                roleFilter === 'ADMIN'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.admins')}
-            </button>
-            <button
-              onClick={() => setRoleFilter('MANAGEMENT')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                roleFilter === 'MANAGEMENT'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.management', 'Management')}
-            </button>
-            <button
-              onClick={() => setRoleFilter('FUELMAN')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                roleFilter === 'FUELMAN'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.fuelmen')}
-            </button>
+      {/* Filter Toolbar: Search Input + Dedicated Button Filter */}
+      <div className="space-y-2.5 relative z-20">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-slate-400 dark:text-[#666]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('users.searchPlaceholder')}
+              className="w-full text-xs pl-9 pr-9 py-2.5 rounded-full bg-white dark:bg-[#0D0D0D] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#666] focus:border-slate-400 dark:focus:border-white/30 focus:outline-none font-mono shadow-sm"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                title="Hapus teks pencarian"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center p-1 rounded-full bg-slate-100 dark:bg-[#0D0D0D] border border-slate-200 dark:border-white/[0.08] text-[11px]">
+          {/* Dedicated Button Filter with Dropdown Popover */}
+          <div className="relative" ref={filterRef}>
             <button
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                statusFilter === 'ALL'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
+              onClick={() => setShowFilterDropdown((prev) => !prev)}
+              className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                activeFilterCount > 0
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-md'
+                  : 'bg-white dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
               }`}
             >
-              {t('users.allStatus')}
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>{t('common.filter', 'Filter')}</span>
+              {activeFilterCount > 0 && (
+                <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                  activeFilterCount > 0 ? 'bg-emerald-500 text-white' : ''
+                }`}>
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  showFilterDropdown ? 'rotate-180' : ''
+                }`}
+              />
             </button>
-            <button
-              onClick={() => setStatusFilter('ACTIVE')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                statusFilter === 'ACTIVE'
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.active')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('INACTIVE')}
-              className={`px-3 py-1 rounded-full transition-colors ${
-                statusFilter === 'INACTIVE'
-                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {t('users.inactive')}
-            </button>
+
+            {/* Filter Dropdown Popover (100% Solid Opaque Card) */}
+            {showFilterDropdown && (
+              <div className="filter-dropdown-card absolute right-0 top-full mt-2 w-full sm:w-80 rounded-2xl p-4 z-50 animate-in fade-in duration-150">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                  <div className="flex items-center space-x-2 text-slate-900 dark:text-white font-semibold text-xs">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-white/60" />
+                    <span>{lang === 'id' ? 'Filter Pengguna' : 'Filter Users'}</span>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={() => {
+                        setRoleFilter('ALL');
+                        setStatusFilter('ALL');
+                      }}
+                      className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>{lang === 'id' ? 'Reset' : 'Reset'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4 py-3">
+                  {/* Role Filter */}
+                  <div>
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-2">
+                      {t('users.roleFilter')}
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setRoleFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                          roleFilter === 'ALL'
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {t('users.allRoles')}
+                      </button>
+                      <button
+                        onClick={() => setRoleFilter('ADMIN')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                          roleFilter === 'ADMIN'
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {t('users.admins')}
+                      </button>
+                      <button
+                        onClick={() => setRoleFilter('MANAGEMENT')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                          roleFilter === 'MANAGEMENT'
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {t('users.management', 'Management')}
+                      </button>
+                      <button
+                        onClick={() => setRoleFilter('FUELMAN')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                          roleFilter === 'FUELMAN'
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {t('users.fuelmen')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-2">
+                      {t('users.statusFilter')}
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        onClick={() => setStatusFilter('ALL')}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                          statusFilter === 'ALL'
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {t('users.allStatus')}
+                      </button>
+                      <button
+                        onClick={() => setStatusFilter('ACTIVE')}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition-all ${
+                          statusFilter === 'ACTIVE'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-500/30'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>{t('users.active')}</span>
+                      </button>
+                      <button
+                        onClick={() => setStatusFilter('INACTIVE')}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 transition-all ${
+                          statusFilter === 'INACTIVE'
+                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 font-semibold border border-rose-300 dark:border-rose-500/30'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        <span>{t('users.inactive')}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-slate-400 dark:text-[#666]">
+                    {users.length} {lang === 'id' ? 'pengguna' : 'users'}
+                  </span>
+                  <button
+                    onClick={() => setShowFilterDropdown(false)}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white text-xs font-semibold transition"
+                  >
+                    {lang === 'id' ? 'Selesai' : 'Done'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Active Filter Chips / Badges (Quick Dismiss) */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 animate-in fade-in duration-150">
+            <span className="text-[11px] text-slate-400 dark:text-[#666] font-medium">
+              {lang === 'id' ? 'Filter aktif:' : 'Active filters:'}
+            </span>
+
+            {roleFilter !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                <span>
+                  {t('users.roleFilter')}:{' '}
+                  <strong className="font-semibold">
+                    {roleFilter === 'ADMIN'
+                      ? t('users.admins')
+                      : roleFilter === 'MANAGEMENT'
+                      ? t('users.management', 'Management')
+                      : t('users.fuelmen')}
+                  </strong>
+                </span>
+                <button
+                  onClick={() => setRoleFilter('ALL')}
+                  className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                  title="Hapus filter peran"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {statusFilter !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                <span>
+                  {t('users.statusFilter')}:{' '}
+                  <strong className="font-semibold">
+                    {statusFilter === 'ACTIVE' ? t('users.active') : t('users.inactive')}
+                  </strong>
+                </span>
+                <button
+                  onClick={() => setStatusFilter('ALL')}
+                  className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                  title="Hapus filter status"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              onClick={() => {
+                setRoleFilter('ALL');
+                setStatusFilter('ALL');
+              }}
+              className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline ml-1"
+            >
+              {lang === 'id' ? 'Hapus Semua' : 'Clear All'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

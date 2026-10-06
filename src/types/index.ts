@@ -46,6 +46,10 @@ export interface Unit {
   makeModel?: string | null;
   lastKm: number;
   lastHm: number;
+  lastKwh?: number;
+  hasHm?: boolean;
+  hasKm?: boolean;
+  hasKwh?: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +63,22 @@ export interface StorageTank {
   currentStockLiters: number;
   minStockAlertLiters: number;
   fuelType: string;
+  tankType?: 'STATIONARY' | 'MOBILE_TRUCK';
+  location?: string;
+}
+
+export interface StockTransfer {
+  id: string;
+  transferNumber: string;
+  sourceTankId: string;
+  targetTankId: string;
+  sourceTank?: StorageTank;
+  targetTank?: StorageTank;
+  volumeLiters: number;
+  transferredAt: string;
+  transferredBy?: string;
+  notes?: string | null;
+  createdAt: string;
 }
 
 export interface FuelLog {
@@ -79,6 +99,9 @@ export interface FuelLog {
   previousKm: number;
   currentKm: number;
   deltaKm: number;
+  previousKwh?: number;
+  currentKwh?: number;
+  deltaKwh?: number;
   volumeLiters: number;
   shift: string;
   operator: string;
@@ -87,6 +110,11 @@ export interface FuelLog {
   stockAkhir: number;
   totalFuelIn: number;
   fuelmanName: string;
+  sourceType?: string;
+  flowAwal?: number | null;
+  flowAkhir?: number | null;
+  totalisatorQty?: number | null;
+  doNumber?: string | null;
   bypassValidation: boolean;
   bypassReason: string | null;
   syncStatus: SyncStatus;
