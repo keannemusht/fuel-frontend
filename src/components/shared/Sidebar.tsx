@@ -100,7 +100,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <div className="flex flex-col justify-between h-full overflow-hidden">
       {/* Brand Header - Seamlessly aligned with main Header bar (h-16) */}
       <div
-        className={`h-16 w-full px-4 border-b border-slate-200 dark:border-white/[0.08] flex items-center shrink-0 ${
+        className={`h-16 w-full px-4 border-b border-slate-200 dark:border-slate-800 flex items-center shrink-0 ${
           collapsed ? 'justify-center' : 'justify-between'
         }`}
       >
@@ -142,7 +142,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation Items */}
         <nav className="p-3 mt-2 space-y-1 flex-1">
           {!collapsed && (
-            <div className="text-[11px] font-medium text-slate-400 dark:text-[#666666] px-3 py-1.5 uppercase tracking-wider">
+            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 px-3 py-1.5 uppercase tracking-wider">
               {t('nav.menu', 'Menu')}
             </div>
           )}
@@ -163,8 +163,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   collapsed ? 'justify-center px-2 py-3' : 'justify-between px-3.5 py-3'
                 } rounded-2xl text-xs font-medium transition-all duration-200 ${
                   isActive
-                    ? 'fms-nav-active bg-slate-900 !text-white dark:bg-white/[0.08] dark:!text-white border border-slate-900 dark:border-white/[0.12] shadow-sm font-semibold'
-                    : 'fms-nav-inactive text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] border border-transparent'
+                    ? 'fms-nav-active bg-slate-900 !text-white dark:bg-slate-800 dark:!text-white border border-slate-900 dark:border-slate-700 shadow-sm font-semibold'
+                    : 'fms-nav-inactive text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -172,7 +172,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     className={`w-4 h-4 shrink-0 transition-colors ${
                       isActive
                         ? '!text-white'
-                        : 'text-slate-500 dark:text-[#666666] group-hover:text-slate-900 dark:group-hover:text-white'
+                        : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'
                     }`}
                   />
                   {!collapsed && (
@@ -188,7 +188,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Footer: Pure Logout Only */}
-      <div className="p-3 border-t border-slate-200 dark:border-white/[0.06] bg-slate-50/50 dark:bg-transparent">
+      <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-transparent">
         {collapsed ? (
           <div className="flex justify-center">
             <button
@@ -216,7 +216,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Desktop Persistent Sidebar with Collapsible Slider */}
       <aside
-        className={`hidden lg:flex relative bg-white dark:bg-[#000000] border-r border-slate-200 dark:border-white/[0.08] flex-col justify-between shrink-0 h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out ${
+        className={`hidden lg:flex relative bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col justify-between shrink-0 h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out ${
           isCollapsed ? 'w-[76px]' : 'w-64'
         }`}
       >
@@ -225,7 +225,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           onClick={toggleCollapse}
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          className="hidden lg:flex items-center justify-center absolute -right-3.5 top-[18px] w-7 h-7 rounded-full bg-white dark:bg-[#1A1A1A] text-slate-700 dark:text-white border border-slate-300 dark:border-white/20 shadow-md hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer"
+          className="hidden lg:flex items-center justify-center absolute -right-3.5 top-[18px] w-7 h-7 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-md hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer"
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5" />
@@ -241,13 +241,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 lg:hidden transition-opacity duration-300"
         />
       )}
 
       {/* Mobile Slide-over Drawer */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-72 bg-white dark:bg-[#000000] border-r border-slate-200 dark:border-white/[0.08] z-50 lg:hidden transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 bottom-0 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-50 lg:hidden transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

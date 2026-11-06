@@ -50,27 +50,27 @@ export default function ProfileDropdown() {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-xl bg-slate-50/80 hover:bg-slate-100 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-98"
+        className="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-xl bg-slate-50/80 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-all cursor-pointer shadow-xs active:scale-98"
         aria-label="User Profile Menu"
       >
-        {/* Plum/Magenta Circle Avatar */}
-        <div className="w-8 h-8 rounded-full bg-[#8C2B6A] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-wide">
+        {/* Executive Slate Minimalist Avatar */}
+        <div className="w-8 h-8 rounded-full bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-wide border border-transparent dark:border-slate-700">
           <span>{initials}</span>
         </div>
 
         {/* Name & Role (Desktop) */}
         <div className="hidden sm:flex flex-col text-left">
-          <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate max-w-[130px]">
+          <span className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight truncate max-w-[130px]">
             {displayName}
           </span>
-          <span className="text-[11px] text-slate-500 dark:text-[#888] leading-tight">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
             {subtitle}
           </span>
         </div>
 
         {/* Chevron Indicator */}
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-600 dark:text-slate-300 transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 text-slate-600 dark:text-slate-400 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
@@ -78,36 +78,36 @@ export default function ProfileDropdown() {
 
       {/* 2. Popover Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/10 shadow-xl p-3.5 z-50 text-slate-900 dark:text-white transition-all">
+        <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-3.5 z-50 text-slate-900 dark:text-slate-100 transition-all">
           {/* Header: User Full Name & Access Level */}
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
               {displayName}
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-[#888]">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               {subtitle}
             </p>
           </div>
 
           {/* Thin Divider */}
-          <div className="border-t border-slate-200/90 dark:border-white/[0.08] my-3" />
+          <div className="border-t border-slate-200/90 dark:border-slate-800 my-3" />
 
           {/* Row 1: Bahasa Switcher */}
           <div className="flex items-center justify-between py-1">
-            <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-200 text-xs">
+            <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 text-xs">
               <Globe className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
               <span className="font-normal">{t('profile.languageLabel', 'Bahasa')}</span>
             </div>
 
             {/* Segmented Pill ID / EN */}
-            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08]">
+            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setLang('id')}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
                   lang === 'id'
-                    ? 'bg-white dark:bg-[#222] text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-600'
+                    : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium'
                 }`}
               >
                 ID
@@ -117,8 +117,8 @@ export default function ProfileDropdown() {
                 onClick={() => setLang('en')}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
                   lang === 'en'
-                    ? 'bg-white dark:bg-[#222] text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-600'
+                    : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium'
                 }`}
               >
                 EN
@@ -128,9 +128,9 @@ export default function ProfileDropdown() {
 
           {/* Row 2: Tema / Theme Switcher */}
           <div className="flex items-center justify-between py-1">
-            <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-200 text-xs">
+            <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 text-xs">
               {theme === 'dark' ? (
-                <Moon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                <Moon className="w-4 h-4 text-slate-400 shrink-0" />
               ) : (
                 <Sun className="w-4 h-4 text-amber-500 shrink-0" />
               )}
@@ -138,14 +138,14 @@ export default function ProfileDropdown() {
             </div>
 
             {/* Segmented Pill Light / Dark */}
-            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08]">
+            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setTheme('light')}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
                   theme === 'light'
-                    ? 'bg-white dark:bg-[#222] text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-600'
+                    : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium'
                 }`}
               >
                 Light
@@ -155,8 +155,8 @@ export default function ProfileDropdown() {
                 onClick={() => setTheme('dark')}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-white dark:bg-[#222] text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-600'
+                    : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium'
                 }`}
               >
                 Dark
@@ -165,7 +165,7 @@ export default function ProfileDropdown() {
           </div>
 
           {/* Thin Divider */}
-          <div className="border-t border-slate-200/90 dark:border-white/[0.08] my-3" />
+          <div className="border-t border-slate-200/90 dark:border-slate-800 my-3" />
 
           {/* Row 3: Logout Action */}
           <button

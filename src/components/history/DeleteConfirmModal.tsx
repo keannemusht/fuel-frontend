@@ -3,6 +3,7 @@
 import React from 'react';
 import { FuelLog } from '@/types';
 import { AlertTriangle, Trash2, X, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function DeleteConfirmModal({
   onConfirm,
   isDeleting,
 }: DeleteConfirmModalProps) {
+  const { lang } = useLanguage();
   if (!isOpen || !log) return null;
 
   return (
@@ -35,10 +37,10 @@ export default function DeleteConfirmModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Hapus Data Fuel Log
+                {lang === 'id' ? 'Hapus Data Fuel Log' : 'Delete Fuel Log Record'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-[#888888]">
-                Konfirmasi penghapusan data riwayat
+                {lang === 'id' ? 'Konfirmasi penghapusan data riwayat' : 'Confirm deletion of historical log'}
               </p>
             </div>
           </div>
@@ -57,14 +59,16 @@ export default function DeleteConfirmModal({
           <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs leading-relaxed">
             <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
             <p>
-              Tindakan ini permanen dan tidak dapat dibatalkan. Catatan pemakaian bahan bakar ini akan dihapus dari riwayat transaksi.
+              {lang === 'id'
+                ? 'Tindakan ini permanen dan tidak dapat dibatalkan. Catatan pemakaian bahan bakar ini akan dihapus dari riwayat transaksi.'
+                : 'This action is permanent and cannot be undone. This fuel consumption record will be removed from transaction history.'}
             </p>
           </div>
 
           {/* Target Log Info Card */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] space-y-2.5 text-xs">
             <div className="flex justify-between items-center text-slate-500 dark:text-[#888888]">
-              <span>ID Transaksi / Docket:</span>
+              <span>{lang === 'id' ? 'ID Transaksi / Docket:' : 'Transaction ID / Docket:'}</span>
               <span className="font-semibold text-slate-900 dark:text-slate-200 font-mono">
                 {log.logNumber || `#${log.no ?? '-'}`}
               </span>
@@ -76,15 +80,15 @@ export default function DeleteConfirmModal({
               </span>
             </div>
             <div className="flex justify-between items-center text-slate-500 dark:text-[#888888]">
-              <span>Tanggal / Jam:</span>
+              <span>{lang === 'id' ? 'Tanggal / Jam:' : 'Date / Time:'}</span>
               <span className="text-slate-700 dark:text-slate-300 font-medium">
                 {log.dateStr} {log.jamStr ? `• ${log.jamStr}` : ''}
               </span>
             </div>
             <div className="flex justify-between items-center text-slate-500 dark:text-[#888888]">
-              <span>Volume Keluar:</span>
+              <span>{lang === 'id' ? 'Volume Keluar:' : 'Dispensed Volume:'}</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                {log.volumeLiters.toLocaleString('id-ID')} Liter
+                {log.volumeLiters.toLocaleString(lang === 'id' ? 'id-ID' : 'en-US')} Liter
               </span>
             </div>
             {(log.operator || log.fuelmanName) && (
@@ -105,7 +109,7 @@ export default function DeleteConfirmModal({
               disabled={isDeleting}
               className="px-4 py-2 rounded-full border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05] transition disabled:opacity-50"
             >
-              Batal
+              {lang === 'id' ? 'Batal' : 'Cancel'}
             </button>
             <button
               type="button"
@@ -116,12 +120,12 @@ export default function DeleteConfirmModal({
               {isDeleting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Menghapus...</span>
+                  <span>{lang === 'id' ? 'Menghapus...' : 'Deleting...'}</span>
                 </>
               ) : (
                 <>
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Ya, Hapus Log</span>
+                  <span>{lang === 'id' ? 'Ya, Hapus Log' : 'Yes, Delete Record'}</span>
                 </>
               )}
             </button>

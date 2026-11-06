@@ -27,8 +27,15 @@ import {
   ChevronDown,
   RotateCcw,
   X,
+  CloudUpload,
+  Download,
+  Upload,
+  ExternalLink,
+  FileText,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
+import { useSyncTelemetry } from '@/hooks/useFuelData';
+import { useSite } from '@/components/providers/SiteProvider';
 import SyncStatusBadge from '@/components/shared/SyncStatusBadge';
 import ExcelImportModal from '@/components/shared/ExcelImportModal';
 import HistoricalLogModal from '@/components/history/HistoricalLogModal';
@@ -95,19 +102,25 @@ export default function HistoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const [showDataMenu, setShowDataMenu] = useState<boolean>(false);
+  const dataActionsRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 25;
 
-  // Close filter dropdown on outside click or Escape
+  // Close filter dropdown and data menu on outside click or Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
         setShowFilterDropdown(false);
       }
+      if (dataActionsRef.current && !dataActionsRef.current.contains(event.target as Node)) {
+        setShowDataMenu(false);
+      }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowFilterDropdown(false);
+        setShowDataMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -127,7 +140,137 @@ export default function HistoryPage() {
   const [deletingLog, setDeletingLog] = useState<FuelLog | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
+  const { site: selectedSite, siteLabel } = useSite();
+  const { data: syncData } = useSyncTelemetry();
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isExportingErp, setIsExportingErp] = useState<boolean>(false);
+  const [isExportingErpCsv, setIsExportingErpCsv] = useState<boolean>(false);
+
   const monthNames = lang === 'id' ? MONTH_NAMES_ID : MONTH_NAMES_EN;
+
+  const [syncingLogId, setSyncingLogId] = useState<string | null>(null);
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      const siteParam = selectedSite && selectedSite !== 'ALL' ? `&site=${selectedSite}` : '';
+      const res = await api.get(`/excel/export?monthStr=${selectedYear}-${selectedMonth}${siteParam}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `BATARA_FUEL_MONITORING_${selectedYear}_${selectedMonth}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(
+        lang === 'id'
+          ? `Laporan Excel ${selectedMonthLabel} berhasil diunduh!`
+          : `Excel report for ${selectedMonthLabel} downloaded successfully!`
+      );
+    } catch (e: any) {
+      toast.error(
+        lang === 'id'
+          ? 'Gagal mengunduh laporan Excel.'
+          : 'Failed to download Excel report.'
+      );
+      console.error('Export error:', e);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportErp = async () => {
+    try {
+      setIsExportingErp(true);
+      const siteParam = selectedSite && selectedSite !== 'ALL' ? `&site=${selectedSite}` : '&site=SENYIUR';
+      const res = await api.get(`/excel/export-erp?monthStr=${selectedYear}-${selectedMonth}${siteParam}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const targetSite = selectedSite === 'MUARA_PAHU' ? 'MUARAPAHU' : 'SENYIUR';
+      link.setAttribute('download', `UPLOAD_ERP_FUEL_${targetSite}_${selectedYear}_${selectedMonth}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(
+        lang === 'id'
+          ? `File format upload ERP (${siteLabel}) berhasil diunduh!`
+          : `ERP upload file for ${siteLabel} downloaded successfully!`
+      );
+    } catch (e: any) {
+      toast.error(
+        lang === 'id'
+          ? 'Gagal mengunduh format ERP.'
+          : 'Failed to download ERP format file.'
+      );
+      console.error('Export ERP error:', e);
+    } finally {
+      setIsExportingErp(false);
+    }
+  };
+
+  const handleExportErpCsv = async () => {
+    try {
+      setIsExportingErpCsv(true);
+      const siteParam = selectedSite && selectedSite !== 'ALL' ? `&site=${selectedSite}` : '&site=SENYIUR';
+      const res = await api.get(`/excel/export-erp-csv?monthStr=${selectedYear}-${selectedMonth}${siteParam}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      const targetSite = selectedSite === 'MUARA_PAHU' ? 'MUARAPAHU' : 'SENYIUR';
+      link.setAttribute('download', `UPLOAD_ERP_FUEL_${targetSite}_${selectedYear}_${selectedMonth}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(
+        lang === 'id'
+          ? `File CSV format upload ERP (${siteLabel}) berhasil diunduh!`
+          : `ERP CSV upload file for ${siteLabel} downloaded successfully!`
+      );
+    } catch (e: any) {
+      toast.error(
+        lang === 'id'
+          ? 'Gagal mengunduh format ERP CSV.'
+          : 'Failed to download ERP CSV format file.'
+      );
+      console.error('Export ERP CSV error:', e);
+    } finally {
+      setIsExportingErpCsv(false);
+    }
+  };
+
+  const handleSyncSingleLog = async (log: FuelLog) => {
+    setSyncingLogId(log.id);
+    try {
+      const res = await api.post(`/fuel/logs/${log.id}/sync`);
+      const msg =
+        res.data?.message ||
+        (lang === 'id'
+          ? `Log #${log.no || log.logNumber} berhasil disinkronkan ke Google Sheets!`
+          : `Log #${log.no || log.logNumber} synced to Google Sheets!`);
+      toast.success(msg);
+      queryClient.invalidateQueries({ queryKey: ['monthlyFuelLogs', monthStr, selectedSite] });
+      queryClient.invalidateQueries({ queryKey: ['monthlySummary', selectedYear, selectedMonth, selectedSite] });
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        (lang === 'id' ? 'Gagal sinkronisasi ke Google Sheets' : 'Failed to sync to Google Sheets');
+      toast.error(msg);
+    } finally {
+      setSyncingLogId(null);
+    }
+  };
 
   const handleOpenEdit = (log: FuelLog) => {
     setEditingLog(log);
@@ -148,8 +291,8 @@ export default function HistoryPage() {
       });
       toast.success(successMsg);
       setDeletingLog(null);
-      queryClient.invalidateQueries({ queryKey: ['monthlyFuelLogs', monthStr] });
-      queryClient.invalidateQueries({ queryKey: ['monthlySummary', selectedYear, selectedMonth] });
+      queryClient.invalidateQueries({ queryKey: ['monthlyFuelLogs', monthStr, selectedSite] });
+      queryClient.invalidateQueries({ queryKey: ['monthlySummary', selectedYear, selectedMonth, selectedSite] });
       queryClient.invalidateQueries({ queryKey: ['fuelLogs'] });
       setTimeout(() => setSyncFeedback(null), 6000);
     } catch (err: any) {
@@ -173,18 +316,20 @@ export default function HistoryPage() {
     isFetching: isFetchingLogs,
     refetch: refetchLogs,
   } = useQuery<FuelLog[]>({
-    queryKey: ['monthlyFuelLogs', monthStr],
+    queryKey: ['monthlyFuelLogs', monthStr, selectedSite],
     queryFn: async () => {
-      const res = await api.get(`/fuel/logs?monthStr=${monthStr}&limit=1000`);
+      const siteParam = selectedSite && selectedSite !== 'ALL' ? `&site=${selectedSite}` : '';
+      const res = await api.get(`/fuel/logs?monthStr=${monthStr}&limit=1000${siteParam}`);
       return res.data.data;
     },
   });
 
   // 2. Fetch Monthly Summary KPIs
   const { data: summary } = useQuery<MonthlySummary>({
-    queryKey: ['monthlySummary', selectedYear, selectedMonth],
+    queryKey: ['monthlySummary', selectedYear, selectedMonth, selectedSite],
     queryFn: async () => {
-      const res = await api.get(`/fuel/monthly-summary?year=${selectedYear}&month=${selectedMonth}`);
+      const siteParam = selectedSite && selectedSite !== 'ALL' ? `&site=${selectedSite}` : '';
+      const res = await api.get(`/fuel/monthly-summary?year=${selectedYear}&month=${selectedMonth}${siteParam}`);
       return res.data.data;
     },
   });
@@ -196,7 +341,12 @@ export default function HistoryPage() {
       return res.data;
     },
     onSuccess: (data: any) => {
-      const successMsg = `Berhasil mensinkronkan ${data.data?.totalSynced ?? data.data?.recordsSynced ?? 0} data ke tab sheet "${data.data?.targetSheet ?? data.data?.tabName}"!`;
+      const syncedCount = data.data?.totalSynced ?? data.data?.recordsSynced ?? 0;
+      const sheetTab = data.data?.targetSheet ?? data.data?.tabName ?? monthStr;
+      const successMsg =
+        lang === 'id'
+          ? `Berhasil mensinkronkan ${syncedCount} data ke tab sheet "${sheetTab}"!`
+          : `Successfully synced ${syncedCount} records to sheet tab "${sheetTab}"!`;
       setSyncFeedback({
         type: 'success',
         message: successMsg,
@@ -207,7 +357,7 @@ export default function HistoryPage() {
       setTimeout(() => setSyncFeedback(null), 6000);
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.error || err.message || 'Gagal sinkronisasi data bulanan ke Google Sheets';
+      const msg = err.response?.data?.error || err.message || (lang === 'id' ? 'Gagal sinkronisasi data bulanan ke Google Sheets' : 'Failed to sync monthly records to Google Sheets');
       setSyncFeedback({ type: 'error', message: msg });
       toast.error(msg);
       setTimeout(() => setSyncFeedback(null), 8000);
@@ -302,16 +452,127 @@ export default function HistoryPage() {
             <span>{syncMonthMutation.isPending ? t('history.syncing', 'Syncing...') : t('history.syncMonth', 'Sync Month')}</span>
           </button>
 
-          {/* Action: Import Excel Data */}
-          {canManage && (
+          {/* Unified Data & Export Dropdown Button */}
+          <div className="relative" ref={dataActionsRef}>
             <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-sm"
+              type="button"
+              onClick={() => setShowDataMenu((prev) => !prev)}
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-xs cursor-pointer"
+              title={lang === 'id' ? 'Menu Impor, Ekspor Excel, Ekspor ERP & Google Sheets' : 'Import, Excel Export, ERP Export & Google Sheets menu'}
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{t('history.importExcel', 'Import Excel Data')}</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
+              <span>{lang === 'id' ? 'Data & Ekspor' : 'Data & Export'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${showDataMenu ? 'rotate-180' : ''}`} />
             </button>
-          )}
+
+            {showDataMenu && (
+              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/90 dark:border-white/10 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-2.5 py-1.5 pb-2 mb-1 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-[#777]">
+                    {lang === 'id' ? 'Aksi Data & Ekspor' : 'Data & Export Actions'}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.08]">
+                    {siteLabel}
+                  </span>
+                </div>
+
+                <div className="space-y-0.5 text-xs">
+                  {/* Option 1: Import Excel */}
+                  {canManage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDataMenu(false);
+                        setShowImportModal(true);
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
+                      <span className="font-medium flex-1">
+                        {lang === 'id' ? 'Import Data Excel' : 'Import Excel Data'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Option 2: Export Excel Standar */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDataMenu(false);
+                      handleExportExcel();
+                    }}
+                    disabled={isExporting}
+                    className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
+                    <span className="font-medium flex-1">
+                      {isExporting
+                        ? (lang === 'id' ? 'Mengekspor Excel...' : 'Exporting Excel...')
+                        : (lang === 'id' ? 'Export Excel (Standar)' : 'Export Excel (Standard)')}
+                    </span>
+                  </button>
+
+                  {/* Option 3: Export ERP Excel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDataMenu(false);
+                      handleExportErp();
+                    }}
+                    disabled={isExportingErp}
+                    className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer disabled:opacity-50"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
+                    <span className="font-medium flex-1 truncate">
+                      {isExportingErp
+                        ? (lang === 'id' ? 'Mengekspor ERP (Excel)...' : 'Exporting ERP (Excel)...')
+                        : (lang === 'id' ? 'Export Format ERP (Excel)' : 'Export ERP Format (Excel)')}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.08]">
+                      .xlsx
+                    </span>
+                  </button>
+
+                  {/* Option 4: Export ERP CSV */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDataMenu(false);
+                      handleExportErpCsv();
+                    }}
+                    disabled={isExportingErpCsv}
+                    className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer disabled:opacity-50"
+                  >
+                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
+                    <span className="font-medium flex-1 truncate">
+                      {isExportingErpCsv
+                        ? (lang === 'id' ? 'Mengekspor ERP (CSV)...' : 'Exporting ERP (CSV)...')
+                        : (lang === 'id' ? 'Export Format ERP (CSV)' : 'Export ERP Format (CSV)')}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.08]">
+                      .csv
+                    </span>
+                  </button>
+
+                  {/* Option 5: Google Sheets */}
+                  {syncData?.spreadsheetUrl ? (
+                    <a
+                      href={syncData.spreadsheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowDataMenu(false)}
+                      className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer"
+                    >
+                      <ExternalLink className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
+                      <span className="font-medium flex-1">
+                        {lang === 'id' ? 'Buka Google Sheets' : 'Open Google Sheets'}
+                      </span>
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -460,20 +721,20 @@ export default function HistoryPage() {
 
               {/* Action Controls: Dedicated Button Filter */}
               <div className="flex items-center space-x-2 self-end md:self-auto">
-                {/* Dedicated Button Filter with Popover */}
+                {/* Dedicated Button Filter with Popover matching /users */}
                 <div className="relative" ref={filterRef}>
                   <button
                     onClick={() => setShowFilterDropdown((prev) => !prev)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-full border text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer ${
                       activeFilterCount > 0
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-md'
-                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80'
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white'
+                        : 'bg-white dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
                     }`}
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
                     <span>{t('common.filter', 'Filter')}</span>
                     {activeFilterCount > 0 && (
-                      <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      <span className="w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center bg-emerald-500 text-white font-mono">
                         {activeFilterCount}
                       </span>
                     )}
@@ -486,7 +747,7 @@ export default function HistoryPage() {
 
                   {/* Filter Popover Dropdown (100% Opaque Solid Card) */}
                   {showFilterDropdown && (
-                    <div className="filter-dropdown-card absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl p-4 z-50 animate-in fade-in duration-150">
+                    <div className="filter-dropdown-card absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl p-4 z-50 animate-in fade-in duration-150 shadow-2xl bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/[0.12]">
                       {/* Header */}
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
                         <div className="flex items-center space-x-2 text-slate-900 dark:text-white font-semibold text-xs">
@@ -500,7 +761,7 @@ export default function HistoryPage() {
                               setStatusFilter('ALL');
                               setCurrentPage(1);
                             }}
-                            className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition"
+                            className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition cursor-pointer"
                           >
                             <RotateCcw className="w-3 h-3" />
                             <span>Reset</span>
@@ -520,9 +781,9 @@ export default function HistoryPage() {
                                 setShiftFilter('ALL');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'ALL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -533,9 +794,9 @@ export default function HistoryPage() {
                                 setShiftFilter('SHIFT 1');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'SHIFT 1'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -546,9 +807,9 @@ export default function HistoryPage() {
                                 setShiftFilter('SHIFT 2');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'SHIFT 2'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -568,9 +829,9 @@ export default function HistoryPage() {
                                 setStatusFilter('ALL');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium text-left transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all cursor-pointer ${
                                 statusFilter === 'ALL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -581,9 +842,9 @@ export default function HistoryPage() {
                                 setStatusFilter('SYNCED');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all cursor-pointer ${
                                 statusFilter === 'SYNCED'
-                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-500/30'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -595,9 +856,9 @@ export default function HistoryPage() {
                                 setStatusFilter('PENDING');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all cursor-pointer ${
                                 statusFilter === 'PENDING'
-                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold border border-amber-300 dark:border-amber-500/30'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -609,7 +870,7 @@ export default function HistoryPage() {
                                 setStatusFilter('FAILED');
                                 setCurrentPage(1);
                               }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all cursor-pointer ${
                                 statusFilter === 'FAILED'
                                   ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 font-semibold border border-rose-300 dark:border-rose-500/30'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
@@ -629,7 +890,7 @@ export default function HistoryPage() {
                         </span>
                         <button
                           onClick={() => setShowFilterDropdown(false)}
-                          className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white text-xs font-semibold transition"
+                          className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white text-xs font-semibold transition cursor-pointer"
                         >
                           {lang === 'id' ? 'Selesai' : 'Done'}
                         </button>
@@ -640,7 +901,7 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {/* Active Filter Chips / Badges */}
+            {/* Active Filter Chips / Badges matching /users */}
             {activeFilterCount > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-0.5 animate-in fade-in duration-150">
                 <span className="text-[11px] text-slate-400 dark:text-[#666] font-medium">
@@ -648,17 +909,17 @@ export default function HistoryPage() {
                 </span>
 
                 {shiftFilter !== 'ALL' && (
-                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08]">
                     <span>
                       {t('history.shiftFilter', 'Shift')}:{' '}
-                      <strong className="font-semibold">{shiftFilter}</strong>
+                      <strong className="font-semibold text-slate-900 dark:text-white">{shiftFilter}</strong>
                     </span>
                     <button
                       onClick={() => {
                         setShiftFilter('ALL');
                         setCurrentPage(1);
                       }}
-                      className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
+                      className="p-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
                       title="Hapus filter shift"
                     >
                       <X className="w-3 h-3" />
@@ -667,18 +928,18 @@ export default function HistoryPage() {
                 )}
 
                 {statusFilter !== 'ALL' && (
-                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.1]">
+                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08]">
                     <span>
                       {t('history.syncFilter', 'Sync')}:{' '}
-                      <strong className="font-semibold">{statusFilter}</strong>
+                      <strong className="font-semibold text-slate-900 dark:text-white">{statusFilter}</strong>
                     </span>
                     <button
                       onClick={() => {
                         setStatusFilter('ALL');
                         setCurrentPage(1);
                       }}
-                      className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition"
-                      title="Hapus filter status sync"
+                      className="p-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+                      title="Hapus filter status"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -691,7 +952,7 @@ export default function HistoryPage() {
                     setStatusFilter('ALL');
                     setCurrentPage(1);
                   }}
-                  className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline ml-1"
+                  className="text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:underline ml-1 cursor-pointer"
                 >
                   {lang === 'id' ? 'Hapus Semua' : 'Clear All'}
                 </button>
@@ -706,23 +967,23 @@ export default function HistoryPage() {
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
-              <th className="py-3 px-3.5 text-center">{t('history.colNo', 'NO ID.')}</th>
-              <th className="py-3 px-3.5">{t('history.colUnit', 'NO UNIT')}</th>
-              <th className="py-3 px-3.5">{t('history.colCategory', 'KATEGORI')}</th>
-              <th className="py-3 px-3.5">{t('history.colType', 'TYPE')}</th>
-              <th className="py-3 px-3.5 text-center">{t('history.colDate', 'DATE')}</th>
-              <th className="py-3 px-3.5 text-center">{t('history.colTime', 'JAM')}</th>
-              <th className="py-3 px-3.5 text-right">{t('history.colKm', 'KM')}</th>
-              <th className="py-3 px-3.5 text-right">{t('history.colHm', 'HM')}</th>
-              <th className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400">{t('history.colFuelIn', 'FUEL IN')}</th>
-              <th className="py-3 px-3.5 text-right text-slate-900 dark:text-white font-semibold">{t('history.colQtyOut', 'QTY OUT ( L )')}</th>
-              <th className="py-3 px-3.5">{t('history.colOperator', 'OPERATOR')}</th>
-              <th className="py-3 px-3.5 text-center">{t('history.colShift', 'SHIFT')}</th>
-              <th className="py-3 px-3.5">{t('history.colFuelman', 'FUELMAN')}</th>
-              <th className="py-3 px-3.5">{t('history.colTank', 'TANKI')}</th>
-              <th className="py-3 px-3.5 text-center">{t('history.colSync', 'SHEETS SYNC')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colNo', 'NO ID.')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colUnit', 'NO UNIT')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colCategory', 'KATEGORI')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colType', 'TYPE')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colDate', 'DATE')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colTime', 'JAM')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colKm', 'KM')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colHm', 'HM')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap text-emerald-600 dark:text-emerald-400">{t('history.colFuelIn', 'FUEL IN')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap text-slate-900 dark:text-white font-semibold">{t('history.colQtyOut', 'QTY OUT ( L )')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colOperator', 'OPERATOR')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colShift', 'SHIFT')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colFuelman', 'FUELMAN')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colTank', 'TANKI')}</th>
+              <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colSync', 'SHEETS SYNC')}</th>
               {canManage && (
-                <th className="py-3 px-3.5 text-center">{t('history.colActions', 'AKSI')}</th>
+                <th className="py-3 px-3.5 text-left whitespace-nowrap">{t('history.colActions', 'AKSI')}</th>
               )}
             </tr>
           </thead>
@@ -749,14 +1010,14 @@ export default function HistoryPage() {
               paginatedLogs.map((log) => (
                 <tr
                   key={log.id}
-                  className="hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors text-slate-800 dark:text-white/90"
+                  className="align-middle hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors text-slate-800 dark:text-white/90"
                 >
-                  <td className="py-3 px-3.5 text-center font-mono text-[10px] text-slate-500 dark:text-[#888888] whitespace-nowrap">
+                  <td className="py-3 px-3.5 text-left font-mono text-[10px] text-slate-500 dark:text-[#888888] whitespace-nowrap">
                     {log.logNumber && (log.logNumber.startsWith('F-') || log.logNumber.startsWith('R-'))
                       ? log.logNumber
                       : (log.no || log.logNumber || '-')}
                   </td>
-                  <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
+                  <td className="py-3 px-3.5 text-left font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                     <div className="flex items-center space-x-1.5">
                       <span>{log.unitCode}</span>
                       {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
@@ -769,50 +1030,77 @@ export default function HistoryPage() {
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs">{log.category || '-'}</td>
-                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] font-sans text-xs truncate max-w-[120px]">
+                  <td className="py-3 px-3.5 text-left text-slate-500 dark:text-[#888888] font-sans text-xs whitespace-nowrap">{log.category || '-'}</td>
+                  <td className="py-3 px-3.5 text-left text-slate-500 dark:text-[#888888] font-sans text-xs truncate max-w-[120px]" title={log.unitCode === 'PENGISIAN' ? 'STORAGE_TANK' : (log.type || (log.unit as any)?.type || '-')}>
                     {log.unitCode === 'PENGISIAN' ? 'STORAGE_TANK' : (log.type || (log.unit as any)?.type || '-')}
                   </td>
-                  <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.dateStr}</td>
-                  <td className="py-3 px-3.5 text-center text-slate-600 dark:text-[#888888]">{log.jamStr || '-'}</td>
-                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{log.currentKm > 0 ? formatNumber(log.currentKm, 1) : '-'}</td>
-                  <td className="py-3 px-3.5 text-right text-slate-700 dark:text-slate-300">{log.currentHm > 0 ? formatNumber(log.currentHm, 1) : '-'}</td>
-                  <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
+                  <td className="py-3 px-3.5 text-left text-slate-600 dark:text-[#888888] whitespace-nowrap">{log.dateStr}</td>
+                  <td className="py-3 px-3.5 text-left text-slate-600 dark:text-[#888888] whitespace-nowrap">{log.jamStr || '-'}</td>
+                  <td className="py-3 px-3.5 text-left text-slate-700 dark:text-slate-300 whitespace-nowrap">{log.currentKm > 0 ? formatNumber(log.currentKm, 1) : '-'}</td>
+                  <td className="py-3 px-3.5 text-left text-slate-700 dark:text-slate-300 whitespace-nowrap">{log.currentHm > 0 ? formatNumber(log.currentHm, 1) : '-'}</td>
+                  <td className="py-3 px-3.5 text-left text-emerald-600 dark:text-emerald-400 font-bold whitespace-nowrap">
                     {log.fuelInLiters > 0 ? `+${formatNumber(log.fuelInLiters, 1)}` : '-'}
                   </td>
-                  <td className="py-3 px-3.5 text-slate-800 dark:text-white/80 font-sans text-xs">
-                    <div>{log.operator}</div>
-                    {log.currentKwh && log.currentKwh > 0 && !log.operator.includes('Kwh') && (
+                  <td className="py-3 px-3.5 text-left font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                    {log.volumeLiters > 0 ? formatNumber(log.volumeLiters, 1) : '-'}
+                  </td>
+                  <td className="py-3 px-3.5 text-left text-slate-800 dark:text-white/80 font-sans text-xs">
+                    <div className="max-w-[200px] truncate font-medium" title={log.operator}>
+                      {log.operator}
+                    </div>
+                    {Boolean(log.currentKwh && log.currentKwh > 0 && !log.operator.includes('Kwh')) && (
                       <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 block font-normal">
-                        ({formatNumber(log.currentKwh, 1)} Kwh)
+                        ({formatNumber(log.currentKwh ?? 0, 1)} Kwh)
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-3.5 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-[#999999] border border-slate-200 dark:border-white/[0.08]">
+                  <td className="py-3 px-3.5 text-left whitespace-nowrap">
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-[#999999] border border-slate-200 dark:border-white/[0.08]">
                       {log.shift}
                     </span>
                   </td>
-                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888]">{log.fuelmanName}</td>
-                  <td className="py-3 px-3.5 text-slate-500 dark:text-[#888888] truncate max-w-[110px]">
+                  <td className="py-3 px-3.5 text-left text-slate-500 dark:text-[#888888] whitespace-nowrap">{log.fuelmanName}</td>
+                  <td className="py-3 px-3.5 text-left text-slate-500 dark:text-[#888888] truncate max-w-[120px]" title={log.tank?.name || '-'}>
                     {log.tank?.name || '-'}
                   </td>
-                  <td className="py-3 px-3.5 text-center">
+                  <td className="py-3 px-3.5 text-left whitespace-nowrap">
                     <SyncStatusBadge status={log.syncStatus} />
                   </td>
                   {canManage && (
-                    <td className="py-3 px-3 text-center">
-                      <div className="flex items-center justify-center space-x-1">
+                    <td className="py-3 px-3.5 text-left whitespace-nowrap">
+                      <div className="flex items-center justify-start space-x-1">
+                        <button
+                          onClick={() => handleSyncSingleLog(log)}
+                          disabled={syncingLogId === log.id}
+                          title={
+                            log.syncStatus === 'SYNCED'
+                              ? lang === 'id'
+                                ? 'Sinkronkan ulang baris ini ke Google Sheets'
+                                : 'Resync this row to Google Sheets'
+                              : lang === 'id'
+                              ? 'Sinkronkan baris ini ke Google Sheets'
+                              : 'Sync this row to Google Sheets'
+                          }
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            syncingLogId === log.id
+                              ? 'text-blue-500 animate-pulse bg-blue-500/10'
+                              : log.syncStatus === 'SYNCED'
+                              ? 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10'
+                              : 'text-amber-500 hover:bg-amber-500/10'
+                          }`}
+                        >
+                          <CloudUpload className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => handleOpenEdit(log)}
-                          title="Edit Log"
+                          title={lang === 'id' ? 'Edit Log' : 'Edit Log'}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeletingLog(log)}
-                          title="Hapus Log"
+                          title={lang === 'id' ? 'Hapus Log' : 'Delete Log'}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

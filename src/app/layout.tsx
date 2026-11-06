@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 import { LanguageProvider } from '@/components/providers/LanguageProvider';
+import { SiteProvider } from '@/components/providers/SiteProvider';
 import ToastProvider from '@/components/providers/ToastProvider';
 
 export const metadata: Metadata = {
@@ -36,14 +37,16 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <QueryProvider>
-          <AuthProvider>
-            <ThemeProvider>
-              <LanguageProvider>
-                {children}
-                <ToastProvider />
-              </LanguageProvider>
-            </ThemeProvider>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <SiteProvider>
+                <ThemeProvider>
+                  {children}
+                  <ToastProvider />
+                </ThemeProvider>
+              </SiteProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </QueryProvider>
       </body>
     </html>

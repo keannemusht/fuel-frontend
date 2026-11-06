@@ -318,8 +318,8 @@ export default function InboundFuelModal({
                       onClick={() => setSelectedTankId(tank.id)}
                       className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? 'bg-slate-50 dark:bg-[#141414] border-cyan-500/40 dark:border-cyan-400/40 shadow-sm ring-1 ring-cyan-500/20'
-                          : 'bg-white dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.18] hover:bg-slate-50/50 dark:hover:bg-[#111111]'
+                          ? 'bg-slate-100/70 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -327,7 +327,7 @@ export default function InboundFuelModal({
                           <h4 className="text-xs font-semibold text-slate-900 dark:text-white tracking-tight truncate">
                             {tank.name}
                           </h4>
-                          <p className="text-[11px] text-slate-500 dark:text-[#777777] font-mono truncate">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
                             {tank.tankCode} • {tank.fuelType}
                           </p>
                         </div>
@@ -337,37 +337,39 @@ export default function InboundFuelModal({
                               ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                               : percentage <= 30
                               ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : isSelected
+                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border-transparent'
+                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                           }`}
                         >
                           <span>{percentage}%</span>
                           {isSelected && parsedInboundLiters > 0 && (
-                            <span className="text-cyan-600 dark:text-cyan-400 ml-1">→ {postRefillPercent}%</span>
+                            <span className="text-slate-700 dark:text-slate-300 ml-1 font-mono">→ {postRefillPercent}%</span>
                           )}
                         </div>
                       </div>
 
-                      {/* Interactive Fuel Level Progress Bar: Exact match with /dispenser */}
-                      <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden my-2.5 flex">
+                      {/* Interactive Fuel Level Progress Bar */}
+                      <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden my-2.5 flex">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             isLow || percentage <= 15
                               ? 'bg-rose-500'
                               : percentage <= 30
                               ? 'bg-amber-500'
-                              : 'bg-gradient-to-r from-emerald-500 to-cyan-500'
+                              : 'bg-slate-900 dark:bg-slate-200'
                           } ${!isSelected ? 'opacity-40' : 'opacity-100'}`}
                           style={{ width: `${Math.min(percentage, 100)}%` }}
                         />
                         {isSelected && parsedInboundLiters > 0 && (
                           <div
-                            className="h-full rounded-full bg-cyan-400 dark:bg-cyan-300 transition-all duration-300 animate-pulse ml-0.5"
+                            className="h-full rounded-full bg-slate-400 dark:bg-slate-500 transition-all duration-300 ml-0.5"
                             style={{ width: `${Math.min(Math.max(0, postRefillPercent - percentage), 100 - percentage)}%` }}
                           />
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-[#888888]">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-slate-400">
                         <span>Available Fuel</span>
                         <span className="text-slate-900 dark:text-white font-medium">
                           {formatNumber(tank.currentStockLiters, 0)} / {formatNumber(tank.capacityLiters, 0)} L
@@ -375,8 +377,8 @@ export default function InboundFuelModal({
                       </div>
 
                       {isSelected && parsedInboundLiters > 0 && (
-                        <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between text-[10px] font-mono">
-                          <span className="text-cyan-600 dark:text-cyan-400 font-semibold">+ Inbound Refill:</span>
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-slate-700 dark:text-slate-300 font-semibold">+ Inbound Refill:</span>
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                             +{formatNumber(parsedInboundLiters, 0)} L → {formatNumber(postRefillStock, 0)} L
                           </span>

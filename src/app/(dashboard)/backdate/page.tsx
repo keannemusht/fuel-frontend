@@ -36,6 +36,7 @@ import {
   Moon,
   SlidersHorizontal,
   X,
+  Zap,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,6 +88,7 @@ export default function BackdatePage() {
   const [selectedTankId, setSelectedTankId] = useState<string>('');
   const [currentKm, setCurrentKm] = useState<string>('');
   const [currentHm, setCurrentHm] = useState<string>('');
+  const [currentKwh, setCurrentKwh] = useState<string>('');
   const [volumeLiters, setVolumeLiters] = useState<string>('');
   const [shift, setShift] = useState<string>('SHIFT 1');
   const [operator, setOperator] = useState<string>('');
@@ -248,6 +250,11 @@ export default function BackdatePage() {
     return dateLogs.reduce((acc, curr) => acc + (curr.fuelInLiters || 0), 0);
   }, [dateLogs]);
 
+  // Unit meter capabilities
+  const unitHasKm = selectedUnit ? (selectedUnit.hasKm ?? true) : true;
+  const unitHasHm = selectedUnit ? (selectedUnit.hasHm ?? true) : true;
+  const unitHasKwh = selectedUnit ? (selectedUnit.hasKwh ?? false) : false;
+
   // Calculations & Meter Rule Validations
   const prevKm = meterContext?.baselineKm ?? 0;
   const prevHm = meterContext?.baselineHm ?? 0;
@@ -256,11 +263,14 @@ export default function BackdatePage() {
 
   const parsedKm = parseFloat(currentKm);
   const parsedHm = parseFloat(currentHm);
+  const parsedKwh = parseFloat(currentKwh);
   const isKmProvided = !isNaN(parsedKm) && currentKm.trim() !== '';
   const isHmProvided = !isNaN(parsedHm) && currentHm.trim() !== '';
+  const isKwhProvided = !isNaN(parsedKwh) && currentKwh.trim() !== '';
 
   const isKmNegative = isKmProvided && parsedKm < 0;
   const isHmNegative = isHmProvided && parsedHm < 0;
+  const isKwhNegative = isKwhProvided && parsedKwh < 0;
 
   const deltaKm = isKmProvided ? parseFloat((parsedKm - prevKm).toFixed(2)) : 0;
   const deltaHm = isHmProvided ? parseFloat((parsedHm - prevHm).toFixed(2)) : 0;
@@ -269,19 +279,25 @@ export default function BackdatePage() {
   const isKmDecreasing = isKmProvided && !isKmNegative && (prevKm > 0 ? parsedKm < prevKm : false);
   const isKmExceeded = isKmProvided && !isKmNegative && deltaKm > 1000;
   const isKmExceedsNext = isKmProvided && !isKmNegative && nextKm !== null && parsedKm > nextKm;
-  const isKmValid = isKmProvided && !isKmNegative && !isKmDecreasing && !isKmExceeded && !isKmExceedsNext;
+  const isKmValid = !unitHasKm || (isKmProvided && !isKmNegative && !isKmDecreasing && !isKmExceeded && !isKmExceedsNext);
 
   // HM Validation (Rule 2: HM must strictly increase)
   const isHmDecreasing = isHmProvided && !isHmNegative && (prevHm > 0 ? parsedHm <= prevHm : false);
   const isHmExceeded = isHmProvided && !isHmNegative && deltaHm > 24;
   const isHmExceedsNext = isHmProvided && !isHmNegative && nextHm !== null && parsedHm >= nextHm;
-  const isHmValid = isHmProvided && !isHmNegative && !isHmDecreasing && !isHmExceedsNext;
+  const isHmValid = !unitHasHm || (isHmProvided && !isHmNegative && !isHmDecreasing && !isHmExceedsNext);
+
+  // KWH Validation
+  const isKwhValid = !unitHasKwh || (isKwhProvided && !isKwhNegative);
 
   // Overall form validity
-  const isMeterValid = (isKmValid && isHmValid) || bypassValidation;
+  const isMeterValid = (isKmValid && isHmValid && isKwhValid) || bypassValidation;
 
   // Validation Status State
-  const hasInputs = isKmProvided || isHmProvided;
+  const hasInputs =
+    (!unitHasKm || isKmProvided) &&
+    (!unitHasHm || isHmProvided) &&
+    (!unitHasKwh || isKwhProvided);
   const validationStatus = !hasInputs
     ? 'EMPTY'
     : isMeterValid
@@ -311,7 +327,10 @@ export default function BackdatePage() {
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
       queryClient.invalidateQueries({ queryKey: ['sync-status'] });
 
-      const successMsg = `Sukses menyimpan data terlewat: ${data.data?.fuelLog?.logNumber || 'Transaksi Disimpan'}. Data telah diverifikasi ke ledger.`;
+      const successMsg =
+        lang === 'id'
+          ? `Sukses menyimpan data terlewat: ${data.data?.fuelLog?.logNumber || 'Transaksi Disimpan'}. Data telah diverifikasi ke ledger.`
+          : `Successfully saved backdate entry: ${data.data?.fuelLog?.logNumber || 'Transaction Saved'}. Data verified in ledger.`;
       setSuccessMessage(successMsg);
       toast.success(successMsg);
       setErrorMessage(null);
@@ -320,13 +339,14 @@ export default function BackdatePage() {
       setVolumeLiters('');
       setCurrentKm('');
       setCurrentHm('');
+      setCurrentKwh('');
       setBypassValidation(false);
       setBypassReason('');
 
       setTimeout(() => setSuccessMessage(null), 8000);
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.message || err.message || 'Gagal menyimpan transaksi backdate.';
+      const msg = err.response?.data?.message || err.message || (lang === 'id' ? 'Gagal menyimpan transaksi backdate.' : 'Failed to save backdate transaction.');
       setErrorMessage(msg);
       toast.error(msg);
       setSuccessMessage(null);
@@ -338,42 +358,49 @@ export default function BackdatePage() {
     setErrorMessage(null);
 
     if (!dateStr) {
-      const msg = 'Pilih tanggal transaksi yang terlewat.';
+      const msg = lang === 'id' ? 'Pilih tanggal transaksi yang terlewat.' : 'Please select the transaction date.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (!jamStr) {
-      const msg = 'Masukkan jam/waktu transaksi.';
+      const msg = lang === 'id' ? 'Masukkan jam/waktu transaksi.' : 'Please enter the transaction time.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (!selectedUnitId) {
-      const msg = 'Pilih unit fleet / target equipment.';
+      const msg = lang === 'id' ? 'Pilih unit fleet / target equipment.' : 'Please select target fleet unit / equipment.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (!selectedTankId) {
-      const msg = 'Pilih tangki penyimpanan sumber bahan bakar.';
+      const msg = lang === 'id' ? 'Pilih tangki penyimpanan sumber bahan bakar.' : 'Please select source fuel storage tank.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
-    if (!isKmProvided || parsedKm < 0) {
-      const msg = 'Masukkan pembacaan Odometer (KM) yang valid.';
+    if (unitHasKm && (!isKmProvided || parsedKm < 0)) {
+      const msg = lang === 'id' ? 'Masukkan pembacaan Odometer (KM) yang valid.' : 'Please enter a valid Odometer (KM) reading.';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
-    if (!isHmProvided || parsedHm < 0) {
-      const msg = 'Masukkan pembacaan Hour Meter (HM) yang valid.';
+    if (unitHasHm && (!isHmProvided || parsedHm < 0)) {
+      const msg = lang === 'id' ? 'Masukkan pembacaan Hour Meter (HM) yang valid.' : 'Please enter a valid Hour Meter (HM) reading.';
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (unitHasKwh && (!isKwhProvided || parsedKwh < 0)) {
+      const msg = lang === 'id' ? 'Masukkan pembacaan Daya Genset (KWH) yang valid.' : 'Please enter a valid KWH reading.';
       setErrorMessage(msg);
       toast.error(msg);
       return;
@@ -382,28 +409,28 @@ export default function BackdatePage() {
     const vol = parseFloat(volumeLiters);
     const fuelIn = parseFloat(fuelInLiters) || 0;
     if ((isNaN(vol) || vol <= 0) && fuelIn <= 0) {
-      const msg = 'Masukkan volume BBM (Qty Out) dalam Liter.';
+      const msg = lang === 'id' ? 'Masukkan volume BBM (Qty Out) dalam Liter.' : 'Please enter fuel volume (Qty Out) in Liters.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (!operator.trim()) {
-      const msg = 'Masukkan nama operator / driver unit.';
+      const msg = lang === 'id' ? 'Masukkan nama operator / driver unit.' : 'Please enter the unit operator / driver name.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (!isMeterValid && !bypassValidation) {
-      const msg = 'Periksa pelanggaran Aturan HM / KM sebelum menyimpan.';
+      const msg = lang === 'id' ? 'Periksa pelanggaran Aturan HM / KM sebelum menyimpan.' : 'Please resolve HM / KM validation rule conflicts before saving.';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
     if (bypassValidation && (!bypassReason.trim() || bypassReason.trim().length < 5)) {
-      const msg = 'Alasan bypass validasi wajib diisi minimal 5 karakter untuk audit trail.';
+      const msg = lang === 'id' ? 'Alasan bypass validasi wajib diisi minimal 5 karakter untuk audit trail.' : 'Validation bypass reason must be at least 5 characters for audit trail.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
@@ -412,8 +439,9 @@ export default function BackdatePage() {
     backdateMutation.mutate({
       unitId: selectedUnitId,
       tankId: selectedTankId,
-      currentKm: parsedKm,
-      currentHm: parsedHm,
+      currentKm: unitHasKm ? (isNaN(parsedKm) ? 0 : parsedKm) : 0,
+      currentHm: unitHasHm ? (isNaN(parsedHm) ? 0 : parsedHm) : 0,
+      currentKwh: unitHasKwh ? (isNaN(parsedKwh) ? 0 : parsedKwh) : undefined,
       volumeLiters: isNaN(vol) ? 0 : vol,
       fuelInLiters: fuelIn,
       shift,
@@ -667,7 +695,7 @@ export default function BackdatePage() {
                   {t('backdate.selectUnitLabel', 'Pilih Unit Alat Berat')} <span className="text-rose-500">*</span>
                 </label>
                 {selectedUnit && (
-                  <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
+                  <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400 font-semibold">
                     Unit Terpilih: {selectedUnit.unitCode}
                   </span>
                 )}
@@ -679,14 +707,20 @@ export default function BackdatePage() {
                 onClick={() => setIsUnitDropdownOpen((prev) => !prev)}
                 className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl border text-left transition-all ${
                   selectedUnit
-                    ? 'bg-slate-50 dark:bg-white/[0.03] border-cyan-500/40 ring-1 ring-cyan-500/20'
-                    : 'bg-slate-50 dark:bg-black border-slate-200 dark:border-white/[0.12] hover:border-slate-300 dark:hover:border-white/20'
+                    ? 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700'
+                    : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 {selectedUnit ? (
                   (() => {
                     const visual = getUnitVisualConfig(selectedUnit.unitCode, selectedUnit.category);
                     const SelectedUnitIcon = visual.Icon;
+                    const meterParts: string[] = [];
+                    if (selectedUnit.hasKm) meterParts.push(`Last KM: ${formatNumber(selectedUnit.lastKm, 1)}`);
+                    if (selectedUnit.hasHm) meterParts.push(`Last HM: ${formatNumber(selectedUnit.lastHm, 1)}`);
+                    if (selectedUnit.hasKwh) meterParts.push(`Last KWH: ${formatNumber((selectedUnit as any).lastKwh || 0, 1)}`);
+                    if (meterParts.length === 0) meterParts.push(lang === 'id' ? 'Pengisian Langsung (Non-Meter)' : 'Direct Volume');
+
                     return (
                       <div className="flex items-center space-x-3 min-w-0">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${visual.containerClass}`}>
@@ -706,7 +740,7 @@ export default function BackdatePage() {
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-[#888] truncate mt-0.5">
-                            {selectedUnit.makeModel || 'Heavy Equipment'} • Last KM: {formatNumber(selectedUnit.lastKm, 1)} • Last HM: {formatNumber(selectedUnit.lastHm, 1)}
+                            {selectedUnit.makeModel || visual.label || (selectedUnit as any).type || 'Fleet Unit'} • {meterParts.join(' • ')}
                           </p>
                         </div>
                       </div>
@@ -720,7 +754,7 @@ export default function BackdatePage() {
                 )}
                 <ChevronDown
                   className={`w-4 h-4 text-slate-400 transition-transform ${
-                    isUnitDropdownOpen ? 'rotate-180 text-cyan-500' : ''
+                    isUnitDropdownOpen ? 'rotate-180 text-slate-700 dark:text-slate-300' : ''
                   }`}
                 />
               </button>
@@ -733,7 +767,7 @@ export default function BackdatePage() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.98 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute z-50 left-0 right-0 mt-2 p-3 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/[0.12] shadow-xl backdrop-blur-xl"
+                    className="absolute z-50 left-0 right-0 mt-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl backdrop-blur-xl"
                   >
                     {/* Search Field */}
                     <div className="relative mb-2.5">
@@ -744,7 +778,7 @@ export default function BackdatePage() {
                         placeholder="Ketik kode unit, kategori, atau tipe mesin..."
                         value={unitSearch}
                         onChange={(e) => setUnitSearch(e.target.value)}
-                        className="w-full text-xs pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+                        className="w-full text-xs pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-600"
                       />
                     </div>
 
@@ -767,13 +801,14 @@ export default function BackdatePage() {
                                 setSelectedUnitId(u.id);
                                 setCurrentKm('');
                                 setCurrentHm('');
+                                setCurrentKwh('');
                                 setErrorMessage(null);
                                 setIsUnitDropdownOpen(false);
                               }}
                               className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${
                                 isCurrent
-                                  ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300'
-                                  : 'hover:bg-slate-100 dark:hover:bg-white/[0.05] border border-transparent'
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-200'
                               }`}
                             >
                               <div className="flex items-center space-x-2.5 min-w-0">
@@ -794,18 +829,32 @@ export default function BackdatePage() {
                                     </span>
                                   </div>
                                   <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                                    {u.makeModel || 'Heavy Equipment'}
+                                    {u.makeModel || visual.label || (u as any).type || 'Fleet Vehicle'}
                                   </div>
                                 </div>
                               </div>
 
                               <div className="text-right shrink-0 ml-2">
-                                <div className="text-[10px] font-mono text-slate-500">
-                                  KM: {formatNumber(u.lastKm, 1)}
-                                </div>
-                                <div className="text-[10px] font-mono text-slate-500">
-                                  HM: {formatNumber(u.lastHm, 1)}
-                                </div>
+                                {u.hasKm && (
+                                  <div className="text-[10px] font-mono text-slate-500">
+                                    KM: {formatNumber(u.lastKm, 1)}
+                                  </div>
+                                )}
+                                {u.hasHm && (
+                                  <div className="text-[10px] font-mono text-slate-500">
+                                    HM: {formatNumber(u.lastHm, 1)}
+                                  </div>
+                                )}
+                                {u.hasKwh && (
+                                  <div className="text-[10px] font-mono text-slate-500">
+                                    KWH: {formatNumber((u as any).lastKwh || 0, 1)}
+                                  </div>
+                                )}
+                                {!u.hasKm && !u.hasHm && !u.hasKwh && (
+                                  <div className="text-[10px] font-mono text-slate-400 italic">
+                                    Non-Meter
+                                  </div>
+                                )}
                               </div>
                             </button>
                           );
@@ -820,7 +869,7 @@ export default function BackdatePage() {
             {/* Storage Tank Selection with Visual Progress Gauge */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-[#999] mb-1.5 flex items-center space-x-1.5">
-                <Database className="w-3.5 h-3.5 text-cyan-500" />
+                <Database className="w-3.5 h-3.5 text-slate-500" />
                 <span>Tangki Penyimpanan Sumber <span className="text-rose-500">*</span></span>
               </label>
               <CustomSelect
@@ -829,20 +878,20 @@ export default function BackdatePage() {
                   label: `${t.name} (${t.tankCode})`,
                   sublabel: `Sisa: ${formatNumber(t.currentStockLiters, 0)} L`,
                   badge: t.fuelType || 'Solar B35',
-                  badgeColor: 'cyan',
-                  icon: <Database className="w-3.5 h-3.5 text-cyan-500" />,
+                  badgeColor: 'slate',
+                  icon: <Database className="w-3.5 h-3.5 text-slate-500" />,
                 }))}
                 value={selectedTankId}
                 onChange={setSelectedTankId}
                 placeholder="Pilih Tangki Sumber..."
-                icon={<Database className="w-3.5 h-3.5 text-cyan-500" />}
+                icon={<Database className="w-3.5 h-3.5 text-slate-500" />}
               />
 
               {selectedTank && (
                 <div className="mt-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2">
-                      <Database className="w-3.5 h-3.5 text-cyan-500" />
+                      <Database className="w-3.5 h-3.5 text-slate-500" />
                       <span className="font-semibold text-slate-700 dark:text-white/90">
                         {selectedTank.name}
                       </span>
@@ -855,12 +904,12 @@ export default function BackdatePage() {
                     </span>
                   </div>
 
-                  {/* Interactive Fuel Level Progress Bar */}
-                  <div className="w-full bg-slate-200 dark:bg-white/10 h-2 rounded-full overflow-hidden">
+                  {/* Fuel Level Progress Bar */}
+                  <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         tankPercent > 30
-                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-500'
+                          ? 'bg-slate-900 dark:bg-white'
                           : tankPercent > 15
                           ? 'bg-amber-500'
                           : 'bg-rose-500'
@@ -871,7 +920,7 @@ export default function BackdatePage() {
 
                   <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-[#888]">
                     <span>Kapasitas Tersisa: {formatNumber(Math.max(0, tankCapacity - tankStock), 0)} Liter</span>
-                    <span className="font-mono font-semibold text-cyan-600 dark:text-cyan-400">
+                    <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
                       {tankPercent}% Penuh
                     </span>
                   </div>
@@ -913,10 +962,10 @@ export default function BackdatePage() {
                     placeholder="0.0"
                     value={volumeLiters}
                     onChange={(e) => setVolumeLiters(e.target.value)}
-                    className="w-full text-2xl font-mono font-black px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm"
+                    className="w-full text-2xl font-mono font-bold px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition-all shadow-xs"
                     required
                   />
-                  <span className="absolute right-4 top-3.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                  <span className="absolute right-4 top-3.5 sm:top-4 text-xs font-mono font-medium text-slate-500 dark:text-[#888]">
                     {t('common.liters', 'LITER')}
                   </span>
                 </div>
@@ -929,7 +978,7 @@ export default function BackdatePage() {
                       key={liters}
                       type="button"
                       onClick={() => handleQuickAddVolume(liters)}
-                      className="px-2.5 py-1 rounded-xl text-[11px] font-mono font-semibold bg-slate-100 hover:bg-emerald-500/15 text-slate-700 hover:text-emerald-700 dark:bg-white/[0.05] dark:hover:bg-emerald-500/20 dark:text-white/80 dark:hover:text-emerald-400 border border-slate-200 dark:border-white/[0.08] transition-all cursor-pointer"
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/[0.05] dark:hover:bg-white/10 dark:text-white/80 border border-slate-200 dark:border-white/[0.08] transition-all cursor-pointer"
                     >
                       +{liters}L
                     </button>
@@ -1100,12 +1149,12 @@ export default function BackdatePage() {
 
                   {/* Point 3: Subsequent Log (Upper Cap) */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-cyan-500 bg-white dark:bg-black shrink-0" />
-                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.08] space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-[#888]">
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-slate-500 bg-white dark:border-slate-400 dark:bg-slate-900 shrink-0" />
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                         <span>Log Sesudahnya (Batas Maksimum)</span>
                         {meterContext?.subsequentLog ? (
-                          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+                          <span className="font-mono text-slate-700 dark:text-slate-300">
                             {meterContext.subsequentLog.dateStr} • {meterContext.subsequentLog.jamStr}
                           </span>
                         ) : (
@@ -1141,14 +1190,14 @@ export default function BackdatePage() {
 
               {/* Status Badge */}
               <span
-                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-all ${
+                className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border transition-all ${
                   validationStatus === 'EMPTY'
                     ? 'bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-[#888] border-slate-200 dark:border-white/10'
                     : validationStatus === 'VALID'
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    ? 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
                     : validationStatus === 'BYPASS'
-                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                    : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
                 }`}
               >
                 {validationStatus === 'EMPTY' && 'MENUNGGU INPUT'}
@@ -1159,206 +1208,278 @@ export default function BackdatePage() {
             </div>
 
             {/* Odometer (KM) Input & Live Validation Card */}
-            <div
-              className={`p-4 rounded-2xl border transition-all duration-300 ${
-                !isKmProvided
-                  ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
-                  : isKmValid
-                  ? 'bg-emerald-50/70 dark:bg-[#0D140E] border-emerald-300 dark:border-emerald-500/30'
-                  : bypassValidation
-                  ? 'bg-amber-50/70 dark:bg-[#17130A] border-amber-300 dark:border-amber-500/30'
-                  : 'bg-rose-50/70 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
-                  Odometer (KM) <span className="text-rose-500">*</span>
-                </span>
-                <span className="text-[11px] font-mono text-slate-500">
-                  Prev:{' '}
-                  <strong className="text-slate-900 dark:text-white font-bold">
-                    {formatNumber(prevKm, 1)}
-                  </strong>
-                  {nextKm !== null && (
-                    <span className="text-slate-400 ml-1">
-                      (Maks: {formatNumber(nextKm, 1)})
+            {unitHasKm && (
+              <div
+                className={`p-4 rounded-2xl border transition-all duration-300 ${
+                  !isKmProvided
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
+                    : isKmValid
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
+                    : bypassValidation
+                    ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
+                    Odometer (KM) <span className="text-rose-500">*</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Prev:{' '}
+                    <strong className="text-slate-900 dark:text-white font-bold">
+                      {formatNumber(prevKm, 1)}
+                    </strong>
+                    {nextKm !== null && (
+                      <span className="text-slate-400 ml-1">
+                        (Maks: {formatNumber(nextKm, 1)})
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder={String(prevKm)}
+                    value={currentKm}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    required={unitHasKm}
+                  />
+                  {isKmProvided && (
+                    <span
+                      className={`px-3 py-2 rounded-xl text-xs font-mono font-bold shrink-0 ${
+                        isKmNegative
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                          : isKmValid
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                          : bypassValidation
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                      }`}
+                    >
+                      {deltaKm >= 0 ? `+${formatNumber(deltaKm, 1)}` : formatNumber(deltaKm, 1)} KM
                     </span>
                   )}
-                </span>
-              </div>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder={String(prevKm)}
-                  value={currentKm}
-                  onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'Minus') e.preventDefault();
-                  }}
-                  onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
-                  className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
-                  required
-                />
+                {/* KM Checklist Rules */}
                 {isKmProvided && (
-                  <span
-                    className={`px-3 py-2 rounded-xl text-xs font-mono font-bold shrink-0 ${
-                      isKmNegative
-                        ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                        : isKmValid
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                        : bypassValidation
-                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
-                        : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                    }`}
-                  >
-                    {deltaKm >= 0 ? `+${formatNumber(deltaKm, 1)}` : formatNumber(deltaKm, 1)} KM
-                  </span>
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-[11px] space-y-1">
+                    {isKmNegative && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan Validasi: Nilai Odometer (KM) tidak boleh negatif (&lt; 0).</span>
+                      </div>
+                    )}
+                    {isKmDecreasing && !isKmNegative && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan 1: KM tidak boleh kurang dari log sebelumnya ({formatNumber(prevKm, 1)} KM).</span>
+                      </div>
+                    )}
+                    {isKmExceeded && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan 1: Jarak tempuh {formatNumber(deltaKm, 1)} KM melebihi batas 1.000 KM per shift.</span>
+                      </div>
+                    )}
+                    {isKmExceedsNext && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan 1: KM melebihi catatan log sesudahnya (Maks: {formatNumber(nextKm!, 1)} KM).</span>
+                      </div>
+                    )}
+                    {isKmValid && (
+                      <div className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan 1 Terpenuhi: Delta KM Valid (+{formatNumber(deltaKm, 1)} KM).</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-
-              {/* KM Checklist Rules */}
-              {isKmProvided && (
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-[11px] space-y-1">
-                  {isKmNegative && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan Validasi: Nilai Odometer (KM) tidak boleh negatif (&lt; 0).</span>
-                    </div>
-                  )}
-                  {isKmDecreasing && !isKmNegative && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan 1: KM tidak boleh kurang dari log sebelumnya ({formatNumber(prevKm, 1)} KM).</span>
-                    </div>
-                  )}
-                  {isKmExceeded && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan 1: Jarak tempuh {formatNumber(deltaKm, 1)} KM melebihi batas 1.000 KM per shift.</span>
-                    </div>
-                  )}
-                  {isKmExceedsNext && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan 1: KM melebihi catatan log sesudahnya (Maks: {formatNumber(nextKm!, 1)} KM).</span>
-                    </div>
-                  )}
-                  {isKmValid && (
-                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan 1 Terpenuhi: Delta KM Valid (+{formatNumber(deltaKm, 1)} KM).</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Hour Meter (HM) Input & Live Validation Card */}
-            <div
-              className={`p-4 rounded-2xl border transition-all duration-300 ${
-                !isHmProvided
-                  ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
-                  : isHmValid
-                  ? 'bg-emerald-50/70 dark:bg-[#0D140E] border-emerald-300 dark:border-emerald-500/30'
-                  : bypassValidation
-                  ? 'bg-amber-50/70 dark:bg-[#17130A] border-amber-300 dark:border-amber-500/30'
-                  : 'bg-rose-50/70 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
-                  Hour Meter (HM) <span className="text-rose-500">*</span>
-                </span>
-                <span className="text-[11px] font-mono text-slate-500">
-                  Prev:{' '}
-                  <strong className="text-slate-900 dark:text-white font-bold">
-                    {formatNumber(prevHm, 1)}
-                  </strong>
-                  {nextHm !== null && (
-                    <span className="text-slate-400 ml-1">
-                      (Maks: {formatNumber(nextHm, 1)})
+            {unitHasHm && (
+              <div
+                className={`p-4 rounded-2xl border transition-all duration-300 ${
+                  !isHmProvided
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
+                    : isHmValid
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
+                    : bypassValidation
+                    ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
+                    Hour Meter (HM) <span className="text-rose-500">*</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Prev:{' '}
+                    <strong className="text-slate-900 dark:text-white font-bold">
+                      {formatNumber(prevHm, 1)}
+                    </strong>
+                    {nextHm !== null && (
+                      <span className="text-slate-400 ml-1">
+                        (Maks: {formatNumber(nextHm, 1)})
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder={String(prevHm)}
+                    value={currentHm}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    required={unitHasHm}
+                  />
+                  {isHmProvided && (
+                    <span
+                      className={`px-3 py-2 rounded-xl text-xs font-mono font-bold shrink-0 ${
+                        isHmNegative
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                          : isHmValid
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                          : bypassValidation
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                      }`}
+                    >
+                      {deltaHm >= 0 ? `+${formatNumber(deltaHm, 1)}` : formatNumber(deltaHm, 1)} HRS
                     </span>
                   )}
-                </span>
-              </div>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder={String(prevHm)}
-                  value={currentHm}
-                  onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'Minus') e.preventDefault();
-                  }}
-                  onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
-                  className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
-                  required
-                />
+                {/* HM Checklist Rules */}
                 {isHmProvided && (
-                  <span
-                    className={`px-3 py-2 rounded-xl text-xs font-mono font-bold shrink-0 ${
-                      isHmNegative
-                        ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                        : isHmValid
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                        : bypassValidation
-                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
-                        : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                    }`}
-                  >
-                    {deltaHm >= 0 ? `+${formatNumber(deltaHm, 1)}` : formatNumber(deltaHm, 1)} HRS
-                  </span>
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-[11px] space-y-1">
+                    {isHmNegative && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan Validasi: Nilai Hour Meter (HM) tidak boleh negatif (&lt; 0).</span>
+                      </div>
+                    )}
+                    {isHmDecreasing && !isHmNegative && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          {parsedHm === prevHm
+                            ? `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh sama dengan log sebelumnya (${formatNumber(prevHm, 1)} Jam).`
+                            : `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh kurang dari log sebelumnya (${formatNumber(prevHm, 1)} Jam).`}
+                        </span>
+                      </div>
+                    )}
+                    {isHmExceeded && !isHmDecreasing && (
+                      <div className="text-amber-600 dark:text-amber-400 flex items-center space-x-1.5 font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Info: Durasi delta {formatNumber(deltaHm, 1)} Jam melewati 24 Jam (berselang hari).</span>
+                      </div>
+                    )}
+                    {isHmExceedsNext && (
+                      <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          {parsedHm === nextHm
+                            ? `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh sama dengan catatan log sesudahnya (${formatNumber(nextHm!, 1)} Jam).`
+                            : `Aturan 2: HM (${formatNumber(parsedHm, 1)}) melebihi catatan log sesudahnya (Maks: ${formatNumber(nextHm!, 1)} Jam).`}
+                        </span>
+                      </div>
+                    )}
+                    {isHmValid && !isHmExceeded && (
+                      <div className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Aturan 2 Terpenuhi: Delta HM Valid (+{formatNumber(deltaHm, 1)} Jam).</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
+            )}
 
-              {/* HM Checklist Rules */}
-              {isHmProvided && (
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-[11px] space-y-1">
-                  {isHmNegative && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan Validasi: Nilai Hour Meter (HM) tidak boleh negatif (&lt; 0).</span>
-                    </div>
-                  )}
-                  {isHmDecreasing && !isHmNegative && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>
-                        {parsedHm === prevHm
-                          ? `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh sama dengan log sebelumnya (${formatNumber(prevHm, 1)} Jam).`
-                          : `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh kurang dari log sebelumnya (${formatNumber(prevHm, 1)} Jam).`}
-                      </span>
-                    </div>
-                  )}
-                  {isHmExceeded && !isHmDecreasing && (
-                    <div className="text-amber-600 dark:text-amber-400 flex items-center space-x-1.5 font-medium">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Info: Durasi delta {formatNumber(deltaHm, 1)} Jam melewati 24 Jam (berselang hari).</span>
-                    </div>
-                  )}
-                  {isHmExceedsNext && (
-                    <div className="text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>
-                        {parsedHm === nextHm
-                          ? `Aturan 2: HM (${formatNumber(parsedHm, 1)}) tidak boleh sama dengan catatan log sesudahnya (${formatNumber(nextHm!, 1)} Jam).`
-                          : `Aturan 2: HM (${formatNumber(parsedHm, 1)}) melebihi catatan log sesudahnya (Maks: ${formatNumber(nextHm!, 1)} Jam).`}
-                      </span>
-                    </div>
-                  )}
-                  {isHmValid && !isHmExceeded && (
-                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>Aturan 2 Terpenuhi: Delta HM Valid (+{formatNumber(deltaHm, 1)} Jam).</span>
-                    </div>
+            {/* Daya Genset (KWH) Input Card: For Genset */}
+            {unitHasKwh && (
+              <div
+                className={`p-4 rounded-2xl border transition-all duration-300 ${
+                  !isKwhProvided
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
+                    : isKwhValid
+                    ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-white/80 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Daya Genset (KWH) <span className="text-rose-500">*</span></span>
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Prev:{' '}
+                    <strong className="text-slate-900 dark:text-white font-bold">
+                      {formatNumber((selectedUnit as any)?.lastKwh || 0, 1)}
+                    </strong> KWH
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="e.g. 1420.5"
+                    value={currentKwh}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+                    }}
+                    onChange={(e) => setCurrentKwh(e.target.value.replace(/-/g, ''))}
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    required={unitHasKwh}
+                  />
+                  {isKwhProvided && (
+                    <span
+                      className={`px-3 py-2 rounded-xl text-xs font-mono font-bold shrink-0 ${
+                        isKwhNegative
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                      }`}
+                    >
+                      {formatNumber(parsedKwh, 1)} KWH
+                    </span>
                   )}
                 </div>
-              )}
-            </div>
+
+                {isKwhProvided && isKwhNegative && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-[11px] text-rose-600 dark:text-rose-400 flex items-center space-x-1.5 font-medium">
+                    <XCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Nilai KWH tidak boleh negatif (&lt; 0).</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Direct Volume Equipment notice */}
+            {!unitHasKm && !unitHasHm && !unitHasKwh && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 flex items-center justify-between font-mono">
+                <span>Unit Armada ini beroperasi dengan mode Direct Volume / Non-Meter (tidak memerlukan input KM/HM).</span>
+                <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 font-bold text-[10px]">DIRECT VOL</span>
+              </div>
+            )}
 
             {/* Validation Bypass (Admin & Management) */}
             {(user?.role === 'ADMIN' || user?.role === 'MANAGEMENT') && (
@@ -1466,11 +1587,11 @@ export default function BackdatePage() {
             <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-[#888] font-bold border border-slate-200 dark:border-white/10">
               {dateLogs.length} {lang === 'id' ? 'Data' : 'Logs'}
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-white/10">
               Total Out: {formatNumber(dateTotalVolume, 1)} L
             </span>
             {dateTotalFuelIn > 0 && (
-              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-white/10">
                 Total In: {formatNumber(dateTotalFuelIn, 1)} L
               </span>
             )}

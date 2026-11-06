@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import ModalPortal from './ModalPortal';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import {
   FileSpreadsheet,
   Upload,
@@ -29,6 +30,7 @@ export default function ExcelImportModal({
   defaultTab = 'units',
   onSuccess,
 }: ExcelImportModalProps) {
+  const { lang, t } = useLanguage();
   const [tab, setTab] = useState<'units' | 'fuel'>(defaultTab);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -59,9 +61,13 @@ export default function ExcelImportModal({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success(`Template ${tab === 'units' ? 'Master Armada' : 'Log BBM'} berhasil diunduh.`);
+      toast.success(
+        lang === 'id'
+          ? `Template ${tab === 'units' ? 'Master Armada' : 'Log BBM'} berhasil diunduh.`
+          : `${tab === 'units' ? 'Fleet Units' : 'Fuel Log'} template downloaded successfully.`
+      );
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Gagal mengunduh template Excel';
+      const msg = err?.response?.data?.message || (lang === 'id' ? 'Gagal mengunduh template Excel' : 'Failed to download Excel template');
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -88,7 +94,7 @@ export default function ExcelImportModal({
 
   const handleUpload = async () => {
     if (!file) {
-      const msg = 'Silakan pilih file Excel (.xlsx atau .xls) terlebih dahulu.';
+      const msg = lang === 'id' ? 'Silakan pilih file Excel (.xlsx atau .xls) terlebih dahulu.' : 'Please select an Excel file (.xlsx or .xls) first.';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
@@ -111,14 +117,18 @@ export default function ExcelImportModal({
 
       setResult(res.data.data);
       const importedCount = res.data.data?.imported || res.data.data?.count || res.data.data?.total || 0;
-      toast.success(`Berhasil mengimpor data! ${importedCount} data berhasil diproses.`);
+      toast.success(
+        lang === 'id'
+          ? `Berhasil mengimpor data! ${importedCount} data berhasil diproses.`
+          : `Successfully imported data! ${importedCount} records processed.`
+      );
       if (onSuccess) {
         onSuccess();
       }
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
-        'Gagal mengimpor file Excel. Pastikan format kolom sesuai template.';
+        (lang === 'id' ? 'Gagal mengimpor file Excel. Pastikan format kolom sesuai template.' : 'Failed to import Excel file. Ensure columns match the template.');
       setErrorMessage(msg);
       toast.error(msg);
     } finally {

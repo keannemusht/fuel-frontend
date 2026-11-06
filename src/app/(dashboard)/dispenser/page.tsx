@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Unit, StorageTank, ShiftSummary } from '@/types';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+import { useUnits, useTanks, useShiftSummary } from '@/hooks/useFuelData';
 import LiveMeterValidator from '@/components/dispenser/LiveMeterValidator';
 import GloveKeypad from '@/components/dispenser/GloveKeypad';
 import TankGauge from '@/components/dispenser/TankGauge';
@@ -104,23 +105,9 @@ export default function DispenserPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 1. Fetch Fleet Units
-  const { data: units = [] } = useQuery<Unit[]>({
-    queryKey: ['units'],
-    queryFn: async () => {
-      const res = await api.get('/units');
-      return res.data.data;
-    },
-  });
-
-  // 2. Fetch Storage Tanks
-  const { data: tanks = [] } = useQuery<StorageTank[]>({
-    queryKey: ['tanks'],
-    queryFn: async () => {
-      const res = await api.get('/tanks');
-      return res.data.data;
-    },
-  });
+  // 1. Fetch Fleet Units & Storage Tanks via centralized hooks
+  const { data: units = [] } = useUnits();
+  const { data: tanks = [] } = useTanks();
 
   // Auto-select tank based on sourceMode
   useEffect(() => {
@@ -153,14 +140,7 @@ export default function DispenserPage() {
   }, [flowAwal, flowAkhir, sourceMode]);
 
   // 3. Fetch Shift Summary KPIs
-  const { data: summary } = useQuery<ShiftSummary>({
-    queryKey: ['shiftSummary'],
-    queryFn: async () => {
-      const res = await api.get('/fuel/summary');
-      return res.data.data;
-    },
-    refetchInterval: 10000,
-  });
+  const { data: summary } = useShiftSummary();
 
   const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
   const selectedTank = tanks.find((t) => t.id === selectedTankId) || null;
@@ -246,13 +226,16 @@ export default function DispenserPage() {
     // KM Validation (Only for units with KM tracking, e.g. LV, PM)
     if (unitHasKm) {
       if (isNaN(km) || km < 0) {
-        const msg = 'Nilai Odometer (KM) tidak valid atau bernilai negatif (< 0).';
+        const msg = lang === 'id' ? 'Nilai Odometer (KM) tidak valid atau bernilai negatif (< 0).' : 'Invalid or negative Odometer (KM) value (< 0).';
         setErrorMessage(msg);
         toast.error(msg);
         return;
       }
       if (!bypassValidation && selectedUnit && selectedUnit.lastKm > 0 && km < selectedUnit.lastKm) {
-        const msg = `Odometer (${km} KM) tidak boleh lebih kecil dari KM sebelumnya (${selectedUnit.lastKm} KM).`;
+        const msg =
+          lang === 'id'
+            ? `Odometer (${km} KM) tidak boleh lebih kecil dari KM sebelumnya (${selectedUnit.lastKm} KM).`
+            : `Odometer (${km} KM) cannot be less than previous KM (${selectedUnit.lastKm} KM).`;
         setErrorMessage(msg);
         toast.error(msg);
         return;
@@ -262,16 +245,20 @@ export default function DispenserPage() {
     // HM Validation (Only for units with HM tracking, e.g. Genset, PM)
     if (unitHasHm) {
       if (isNaN(hm) || hm < 0) {
-        const msg = 'Nilai Hour Meter (HM) tidak valid atau bernilai negatif (< 0).';
+        const msg = lang === 'id' ? 'Nilai Hour Meter (HM) tidak valid atau bernilai negatif (< 0).' : 'Invalid or negative Hour Meter (HM) value (< 0).';
         setErrorMessage(msg);
         toast.error(msg);
         return;
       }
       if (!bypassValidation && selectedUnit && selectedUnit.lastHm > 0 && hm <= selectedUnit.lastHm) {
         const msg =
-          hm === selectedUnit.lastHm
-            ? `Hour Meter (${hm}) tidak boleh sama dengan HM sebelumnya (${selectedUnit.lastHm}). HM harus bertambah.`
-            : `Hour Meter (${hm}) tidak boleh lebih kecil dari HM sebelumnya (${selectedUnit.lastHm}).`;
+          lang === 'id'
+            ? hm === selectedUnit.lastHm
+              ? `Hour Meter (${hm}) tidak boleh sama dengan HM sebelumnya (${selectedUnit.lastHm}). HM harus bertambah.`
+              : `Hour Meter (${hm}) tidak boleh lebih kecil dari HM sebelumnya (${selectedUnit.lastHm}).`
+            : hm === selectedUnit.lastHm
+              ? `Hour Meter (${hm}) cannot be equal to previous HM (${selectedUnit.lastHm}). HM must increase.`
+              : `Hour Meter (${hm}) cannot be less than previous HM (${selectedUnit.lastHm}).`;
         setErrorMessage(msg);
         toast.error(msg);
         return;
@@ -281,13 +268,16 @@ export default function DispenserPage() {
     // KWH Validation (Only for units with KWH tracking, e.g. Genset GS)
     if (unitHasKwh) {
       if (isNaN(kwh) || kwh < 0) {
-        const msg = 'Nilai KWH Genset tidak valid atau bernilai negatif (< 0).';
+        const msg = lang === 'id' ? 'Nilai KWH Genset tidak valid atau bernilai negatif (< 0).' : 'Invalid or negative Generator KWH value (< 0).';
         setErrorMessage(msg);
         toast.error(msg);
         return;
       }
       if (!bypassValidation && selectedUnit && (selectedUnit.lastKwh || 0) > 0 && kwh < (selectedUnit.lastKwh || 0)) {
-        const msg = `KWH (${kwh}) tidak boleh lebih kecil dari KWH sebelumnya (${selectedUnit.lastKwh}).`;
+        const msg =
+          lang === 'id'
+            ? `KWH (${kwh}) tidak boleh lebih kecil dari KWH sebelumnya (${selectedUnit.lastKwh}).`
+            : `KWH (${kwh}) cannot be less than previous KWH (${selectedUnit.lastKwh}).`;
         setErrorMessage(msg);
         toast.error(msg);
         return;
@@ -378,7 +368,7 @@ export default function DispenserPage() {
             <span>{t('dispenser.title', 'Terminal Pengisian Bahan Bakar')}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-[#888888] mt-0.5">
-            Sistem pengisian multi-storage terintegrasi (Fuel Station & Fuel Truck) dengan auto-sync Excel & Google Sheets
+            {t('dispenser.subtitle', 'Sistem pengisian multi-storage terintegrasi (Fuel Station & Fuel Truck) dengan auto-sync Excel & Google Sheets')}
           </p>
         </div>
 
@@ -387,70 +377,70 @@ export default function DispenserPage() {
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition shadow-sm"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-300 dark:border-white/15 bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-[#1A1A1A] text-slate-700 dark:text-white transition shadow-xs cursor-pointer"
           >
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-            <span>Transfer Stock</span>
+            <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" />
+            <span>{t('dispenser.transferStock', 'Transfer Stock')}</span>
           </button>
           <button
             type="button"
             onClick={() => setShowInboundModal(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition shadow-sm"
+            className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-black hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-95 transition shadow-xs cursor-pointer text-white-forced"
           >
-            <ArrowDownToLine className="w-3.5 h-3.5" />
-            <span>+ BBM Masuk (DO)</span>
+            <ArrowDownToLine className="w-3.5 h-3.5 text-white dark:text-black" />
+            <span className="text-white dark:text-black font-semibold">{t('dispenser.inboundDo', '+ BBM Masuk (DO)')}</span>
           </button>
         </div>
       </div>
 
       {/* KPI Cards: Total Dispensed, Transactions, Inbound Refills, Active Tanks */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden">
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">Total BBM Disalurkan</p>
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">{t('dispenser.totalDispensed', 'Total BBM Disalurkan')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
               {formatNumber(summary?.totalDispensedLiters || 0, 1)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-[#888888] ml-1 font-sans">L</span>
             </h3>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-white/70">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-white/70">
               <Fuel className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden">
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">Total Transaksi Shift</p>
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">{t('dispenser.totalShiftTx', 'Total Transaksi Shift')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
               {summary?.totalTransactions || 0}
-              <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-[#888888] ml-1 font-sans">Unit</span>
+              <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-[#888888] ml-1 font-sans">{lang === 'id' ? 'Unit' : 'Units'}</span>
             </h3>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-white/70">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-white/70">
               <Activity className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden">
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">Penerimaan Inbound</p>
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">{t('dispenser.inboundArrival', 'Penerimaan Inbound')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
               {formatNumber(summary?.totalFuelInLiters || 0, 0)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-[#888888] ml-1 font-sans">L</span>
             </h3>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-white/70">
               <Droplet className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm relative overflow-hidden">
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">Mode Pengisian Aktif</p>
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">{t('dispenser.activeDispenseMode', 'Mode Pengisian Aktif')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white truncate">
               {sourceMode === 'STATIONARY' ? 'Stationary Dispenser' : selectedTank?.name || 'Fuel Truck'}
             </h3>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
           </div>
         </div>
       </div>
@@ -476,8 +466,8 @@ export default function DispenserPage() {
                       : 'text-slate-500 dark:text-[#888] hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Fuel className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Fuel Station (Main Senyiur)</span>
+                  <Fuel className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                  <span>{t('dispenser.stationaryStation', 'Fuel Station (Main Senyiur)')}</span>
                 </button>
                 <button
                   type="button"
@@ -488,8 +478,8 @@ export default function DispenserPage() {
                       : 'text-slate-500 dark:text-[#888] hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Truck className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>Fuel Truck (FT 101 / 102)</span>
+                  <Truck className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                  <span>{t('dispenser.fuelTruckMode', 'Fuel Truck (FT 101 / 102)')}</span>
                 </button>
               </div>
 
@@ -504,7 +494,7 @@ export default function DispenserPage() {
                 }`}
               >
                 <Calculator className="w-3.5 h-3.5" />
-                <span>Keypad {showKeypad ? 'Aktif' : 'Off'}</span>
+                <span>Keypad {showKeypad ? (lang === 'id' ? 'Aktif' : 'On') : 'Off'}</span>
               </button>
             </div>
 
@@ -528,7 +518,7 @@ export default function DispenserPage() {
               <label className="text-xs font-semibold text-slate-700 dark:text-[#CCC] flex items-center justify-between">
                 <span className="flex items-center space-x-1.5">
                   <Truck className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
-                  <span>Target Unit / Armada</span>
+                  <span>{t('dispenser.targetFleet', 'Target Unit / Armada')}</span>
                 </span>
                 {selectedUnit && (
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-[#AAA]">
@@ -540,23 +530,23 @@ export default function DispenserPage() {
                 units={units}
                 selectedUnitId={selectedUnitId}
                 onSelectUnit={handleUnitSelect}
-                placeholder="-- Cari atau pilih nomor unit (e.g. PM 401, LV 501, GS 002) --"
+                placeholder={t('dispenser.searchFleetPlaceholder', '-- Cari atau pilih nomor unit (e.g. PM 401, LV 501, GS 002) --')}
               />
             </div>
 
             {/* Storage Tank Selection */}
             {sourceMode === 'STATIONARY' ? (
               <TankGauge
-                title="Source Fuel Storage Tank"
-                icon={<Database className="w-3.5 h-3.5 text-cyan-500" />}
+                title={t('dispenser.sourceFuelTank', 'Sumber Tangki Penyimpanan BBM')}
+                icon={<Database className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />}
                 tanks={tanks.filter((t) => t.tankType === 'STATIONARY' || t.tankCode.includes('SENYIUR') || t.tankCode.includes('MAIN'))}
                 selectedTankId={selectedTankId}
                 onSelectTank={setSelectedTankId}
               />
             ) : (
               <TankGauge
-                title="Pilih Mobile Fuel Truck Pengisi"
-                icon={<Truck className="w-3.5 h-3.5 text-cyan-500" />}
+                title={t('dispenser.selectMobileTruck', 'Pilih Mobile Fuel Truck Pengisi')}
+                icon={<Truck className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />}
                 tanks={fuelTruckTanks}
                 selectedTankId={selectedTankId}
                 onSelectTank={setSelectedTankId}
@@ -568,18 +558,18 @@ export default function DispenserPage() {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.08] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-800 dark:text-white flex items-center gap-1.5">
-                    <Gauge className="w-3.5 h-3.5 text-cyan-500" />
-                    Flow Meter Totalisator Fuel Truck
+                    <Gauge className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                    {t('dispenser.totalizerTitle', 'Flow Meter Totalisator Fuel Truck')}
                   </span>
                   <span className="text-[10px] text-slate-500 dark:text-[#888] font-mono">
-                    Totalisator Qty = Akhir - Awal
+                    {t('dispenser.totalizerCalc', 'Totalisator Qty = Akhir - Awal')}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium text-slate-500 dark:text-[#888]">
-                      Flow Meter Awal
+                      {t('dispenser.flowStart', 'Flow Meter Awal')}
                     </label>
                     <input
                       type="number"
@@ -595,7 +585,7 @@ export default function DispenserPage() {
 
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium text-slate-500 dark:text-[#888]">
-                      Flow Meter Akhir
+                      {t('dispenser.flowEnd', 'Flow Meter Akhir')}
                     </label>
                     <input
                       type="number"
@@ -629,15 +619,17 @@ export default function DispenserPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
               {/* Odometer (KM) Input: Only if unit has KM */}
               {unitHasKm && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center justify-between">
-                    <span>Odometer (KM) *</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between h-5">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      <span>{t('dispenser.odometerKm', 'Odometer (KM)')} *</span>
+                    </label>
                     {selectedUnit && (
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
-                        Prev: {formatNumber(selectedUnit.lastKm, 1)}
+                      <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                        {t('dispenser.prevKm', 'Prev')}: {formatNumber(selectedUnit.lastKm, 1)}
                       </span>
                     )}
-                  </label>
+                  </div>
                   <div className="relative">
                     <input
                       type="number"
@@ -650,9 +642,9 @@ export default function DispenserPage() {
                       }}
                       onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
                       placeholder={selectedUnit ? `${selectedUnit.lastKm + 10}` : '0.0'}
-                      className="w-full text-sm font-mono font-medium px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#555] focus:outline-none shadow-sm"
+                      className="w-full text-sm font-mono font-medium px-3.5 h-[42px] rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none shadow-sm"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-[#666]">
+                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-slate-500">
                       KM
                     </span>
                   </div>
@@ -661,15 +653,17 @@ export default function DispenserPage() {
 
               {/* Hour Meter (HM) Input: Only if unit has HM */}
               {unitHasHm && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center justify-between">
-                    <span>Hour Meter (HM) *</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between h-5">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      <span>{t('dispenser.hourMeterHm', 'Hour Meter (HM)')} *</span>
+                    </label>
                     {selectedUnit && (
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
-                        Prev: {formatNumber(selectedUnit.lastHm, 1)}
+                      <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                        {t('dispenser.prevHm', 'Prev')}: {formatNumber(selectedUnit.lastHm, 1)}
                       </span>
                     )}
-                  </label>
+                  </div>
                   <div className="relative">
                     <input
                       type="number"
@@ -682,9 +676,9 @@ export default function DispenserPage() {
                       }}
                       onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
                       placeholder={selectedUnit ? `${selectedUnit.lastHm + 1}` : '0.0'}
-                      className="w-full text-sm font-mono font-medium px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#555] focus:outline-none shadow-sm"
+                      className="w-full text-sm font-mono font-medium px-3.5 h-[42px] rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none shadow-sm"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-[#666]">
+                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-slate-500">
                       HRS
                     </span>
                   </div>
@@ -693,18 +687,18 @@ export default function DispenserPage() {
 
               {/* KWH Input: For Genset */}
               {unitHasKwh && (
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center justify-between">
-                    <span className="flex items-center gap-1">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <div className="flex items-center justify-between h-5">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Zap className="w-3.5 h-3.5 text-amber-500" />
-                      Daya Genset (KWH) *
-                    </span>
+                      <span>{t('dispenser.gensetPower', 'Daya Genset (KWH)')} *</span>
+                    </label>
                     {selectedUnit && (
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
-                        Prev: {formatNumber(selectedUnit.lastKwh || 0, 1)} KWH
+                      <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                        {t('dispenser.prevHm', 'Prev')}: {formatNumber(selectedUnit.lastKwh || 0, 1)} KWH
                       </span>
                     )}
-                  </label>
+                  </div>
                   <div className="relative">
                     <input
                       type="number"
@@ -717,9 +711,9 @@ export default function DispenserPage() {
                       }}
                       onChange={(e) => setCurrentKwh(e.target.value.replace(/-/g, ''))}
                       placeholder="e.g. 1420.5"
-                      className="w-full text-sm font-mono font-medium px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#555] focus:outline-none shadow-sm"
+                      className="w-full text-sm font-mono font-medium px-3.5 h-[42px] rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none shadow-sm"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-[#666]">
+                    <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400 dark:text-slate-500">
                       KWH
                     </span>
                   </div>
@@ -729,9 +723,9 @@ export default function DispenserPage() {
 
             {/* Dispense Volume (QTY OUT - Liters) & Touch Presets */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-700 dark:text-[#CCC] flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                 <span>{t('dispenser.dispenseQty', 'Volume Pengisian (QTY OUT - Liter)')}</span>
-                <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">Tap Presets</span>
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{t('dispenser.tapPresets', 'Tap Presets')}</span>
               </label>
 
               <div className="relative">
@@ -746,10 +740,10 @@ export default function DispenserPage() {
                   }}
                   onChange={(e) => setVolumeLiters(e.target.value.replace(/-/g, ''))}
                   placeholder="0.0"
-                  className="w-full text-xl sm:text-2xl font-mono font-bold px-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.15] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#555] focus:outline-none shadow-sm"
+                  className="w-full text-xl sm:text-2xl font-mono font-bold px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none shadow-sm"
                 />
-                <span className="absolute right-4 top-3.5 sm:top-4 text-xs font-mono text-slate-400 dark:text-[#888888]">
-                  Liter
+                <span className="absolute right-4 top-3.5 sm:top-4 text-xs font-mono text-slate-400 dark:text-slate-400">
+                  {lang === 'id' ? 'Liter' : 'Liters'}
                 </span>
               </div>
 
@@ -760,7 +754,7 @@ export default function DispenserPage() {
                     key={preset}
                     type="button"
                     onClick={() => handleQuickAddVolume(preset)}
-                    className="py-2 sm:py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-900 active:text-white dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:active:bg-white dark:active:text-black font-mono text-xs font-semibold text-slate-700 dark:text-white border border-slate-200 dark:border-white/[0.08] transition-all shadow-sm"
+                    className="py-2 sm:py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-900 active:text-white dark:bg-slate-800 dark:hover:bg-slate-700 dark:active:bg-white dark:active:text-slate-900 font-mono text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all shadow-sm"
                   >
                     +{preset}L
                   </button>
@@ -770,31 +764,33 @@ export default function DispenserPage() {
 
             {/* Operator & Time (WITA) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
-                  <span>{t('dispenser.operatorDriver', 'Operator / Driver Penerima')}</span>
-                </label>
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center h-5">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center space-x-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                    <span>{t('dispenser.operatorDriver', 'Operator / Driver Penerima')}</span>
+                  </label>
+                </div>
                 <SearchableOperatorSelect
                   value={operator}
                   onChange={setOperator}
-                  placeholder="Cari atau ketik nama operator..."
+                  placeholder={t('dispenser.searchOperatorPlaceholder', 'Cari atau ketik nama operator...')}
                   required
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-600 dark:text-[#888888] flex items-center space-x-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-700 dark:text-white/70" />
-                    <span>Jam (WITA)</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between h-5">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center space-x-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                    <span>{t('dispenser.timeWita', 'Jam (WITA)')}</span>
                   </label>
-                  <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-[9px] font-mono text-slate-600 dark:text-[#888]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[9px] font-mono text-slate-600 dark:text-slate-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     <span>{computedShift === 'SHIFT 1' ? 'Shift 1' : 'Shift 2'}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between px-3.5 py-2.5 h-[41px] rounded-2xl bg-slate-100/70 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.1] shadow-sm select-none cursor-default">
+                <div className="flex items-center justify-between px-3.5 h-[42px] rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm select-none cursor-default">
                   <div className="flex items-center space-x-2">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -803,13 +799,13 @@ export default function DispenserPage() {
                     <span className="text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white tracking-wider">
                       {liveWitaTime || '00:00:00'}
                     </span>
-                    <span className="text-[10px] font-mono font-semibold text-slate-400 dark:text-[#777]">
+                    <span className="text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-500">
                       WITA
                     </span>
                   </div>
-                  <div className="flex items-center space-x-1 text-[9px] font-mono text-slate-500 dark:text-[#888] bg-slate-200/60 dark:bg-white/[0.06] px-2 py-0.5 rounded-md border border-slate-300/40 dark:border-white/[0.04]">
-                    <Clock className="w-2.5 h-2.5 text-slate-400 dark:text-[#777]" />
-                    <span>Live Auto</span>
+                  <div className="flex items-center space-x-1 text-[9px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                    <Clock className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" />
+                    <span>{t('dispenser.liveAuto', 'Live Auto')}</span>
                   </div>
                 </div>
               </div>
@@ -822,11 +818,11 @@ export default function DispenserPage() {
               className="w-full py-3.5 sm:py-4 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-[0.99] text-white dark:text-black font-semibold text-xs tracking-wide uppercase transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 mt-2 text-white-forced"
             >
               {dispenseMutation.isPending ? (
-                <span className="text-white dark:text-black font-semibold">Menyimpan Transaksi...</span>
+                <span className="text-white dark:text-black font-semibold">{t('dispenser.recording', 'Menyimpan Transaksi...')}</span>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5 text-white dark:text-black" />
-                  <span className="text-white dark:text-black font-semibold">Simpan & Sinkronkan</span>
+                  <span className="text-white dark:text-black font-semibold">{t('dispenser.recordAndSync', 'Simpan & Sinkronkan')}</span>
                 </>
               )}
             </button>
@@ -863,54 +859,54 @@ export default function DispenserPage() {
               <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
                 {unitHasKm && (
                   <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    &bull; Odometer KM Wajib
+                    &bull; {t('dispenser.odoKmRequired', 'Odometer KM Wajib')}
                   </span>
                 )}
                 {unitHasHm && (
                   <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                    &bull; Hour Meter HM Wajib
+                    &bull; {t('dispenser.hmRequired', 'Hour Meter HM Wajib')}
                   </span>
                 )}
                 {unitHasKwh && (
                   <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                    &bull; KWH Genset Wajib
+                    &bull; {t('dispenser.kwhRequired', 'KWH Genset Wajib')}
                   </span>
                 )}
                 {!unitHasKm && !unitHasHm && !unitHasKwh && (
                   <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                    &bull; Direct Volume Only (Non-Meter)
+                    &bull; {t('dispenser.directVolumeBadge', 'Direct Volume Only (Non-Meter)')}
                   </span>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.06]">
-                  <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">No Polisi</span>
-                  <span className="font-medium text-slate-900 dark:text-white">{selectedUnit.plateNumber || 'Unit Site'}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">{t('dispenser.plateNumber', 'No Polisi')}</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedUnit.plateNumber || t('dispenser.unitSite', 'Unit Site')}</span>
                 </div>
 
                 <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.06]">
-                  <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">Status</span>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">Aktif Operasional</span>
+                  <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">{t('dispenser.status', 'Status')}</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">{t('dispenser.activeOperational', 'Aktif Operasional')}</span>
                 </div>
 
                 {unitHasKm && (
                   <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.06]">
-                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">KM Terakhir</span>
+                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">{t('dispenser.lastKmLabel', 'KM Terakhir')}</span>
                     <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">{formatNumber(selectedUnit.lastKm, 1)} KM</span>
                   </div>
                 )}
 
                 {unitHasHm && (
                   <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.06]">
-                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">HM Terakhir</span>
+                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">{t('dispenser.lastHmLabel', 'HM Terakhir')}</span>
                     <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">{formatNumber(selectedUnit.lastHm, 1)} HRS</span>
                   </div>
                 )}
 
                 {unitHasKwh && (
                   <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/[0.06] col-span-2">
-                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">KWH Terakhir</span>
+                    <span className="text-[10px] text-slate-400 dark:text-[#777] block mb-1">{t('dispenser.lastKwh', 'KWH Terakhir')}</span>
                     <span className="font-bold text-amber-500 text-xs sm:text-sm">{formatNumber(selectedUnit.lastKwh || 0, 1)} KWH</span>
                   </div>
                 )}
@@ -922,10 +918,10 @@ export default function DispenserPage() {
                 <Truck className="w-5 h-5" />
               </div>
               <h4 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide">
-                Pilih Unit Armada untuk Telemetri Baseline
+                {t('dispenser.inspectBaselines', 'Pilih Unit Armada untuk Telemetri Baseline')}
               </h4>
               <p className="text-xs text-slate-500 dark:text-[#888888] leading-relaxed">
-                Kalkulasi delta membandingkan Hour Meter, Odometer, dan Daya KWH secara live real-time.
+                {t('dispenser.inspectDesc', 'Kalkulasi delta membandingkan Hour Meter, Odometer, dan Daya KWH secara live real-time.')}
               </p>
             </div>
           )}

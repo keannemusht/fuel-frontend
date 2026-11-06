@@ -26,6 +26,13 @@ export default function LoginPage() {
       return;
     }
 
+    if (password.trim().length < 6) {
+      const minMsg = lang === 'id' ? 'Password minimal 6 karakter.' : 'Password must be at least 6 characters.';
+      setError(minMsg);
+      toast.warning(minMsg);
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
@@ -44,11 +51,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F4F6F9] dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F4F6F9] dark:bg-slate-950 transition-colors duration-200">
       {/* ========================================================================= */}
       {/* LEFT SECTION: Site Photo Showcase (/img/loginpage.jpg)                    */}
       {/* ========================================================================= */}
-      <div className="hidden lg:block lg:w-1/2 xl:w-[54%] relative overflow-hidden border-r border-slate-200/10 dark:border-white/[0.08]">
+      <div className="hidden lg:block lg:w-1/2 xl:w-[54%] relative overflow-hidden border-r border-slate-200/10 dark:border-slate-800">
         <Image
           src="/img/loginpage.jpg"
           alt="Batara Mining Fuel Operation Site"
@@ -77,7 +84,7 @@ export default function LoginPage() {
       {/* ========================================================================= */}
       {/* RIGHT SECTION: Login Form Panel                                           */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-1/2 xl:w-[46%] flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white dark:bg-[#090909] text-slate-900 dark:text-white transition-colors duration-200">
+      <div className="w-full lg:w-1/2 xl:w-[46%] flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white dark:bg-slate-900 text-slate-900 dark:text-white transition-colors duration-200">
         {/* Top Header & Language Switcher */}
         <div className="flex items-center justify-between w-full">
           {/* Mobile brand indicator (visible only when left banner is hidden) */}
@@ -95,14 +102,14 @@ export default function LoginPage() {
           </div>
 
           {/* Language Switcher */}
-          <div className="ml-auto flex items-center bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-full p-0.5 text-[11px] font-mono shadow-sm">
+          <div className="ml-auto flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-0.5 text-[11px] font-mono shadow-sm">
             <button
               type="button"
               onClick={() => setLang('id')}
               className={`px-3 py-1 rounded-full transition-all ${
                 lang === 'id'
                   ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-white/60 dark:hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               ID
@@ -113,7 +120,7 @@ export default function LoginPage() {
               className={`px-3 py-1 rounded-full transition-all ${
                 lang === 'en'
                   ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-white/60 dark:hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               EN
@@ -140,7 +147,7 @@ export default function LoginPage() {
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                 {lang === 'id' ? 'Masuk ke Sistem' : 'Sign in to Terminal'}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-[#888888] mt-1 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {t('login.subtitle')}
               </p>
             </div>
@@ -169,7 +176,7 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={lang === 'id' ? 'Masukkan username' : 'Enter username'}
-                className="w-full text-xs font-mono px-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#666] focus:bg-white dark:focus:bg-[#161616] focus:border-slate-900 dark:focus:border-white/40 focus:outline-none transition-all shadow-sm"
+                className="w-full text-xs font-mono px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-slate-400 focus:outline-none transition-all shadow-sm"
               />
             </div>
 
@@ -186,7 +193,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={lang === 'id' ? 'Masukkan password' : 'Enter password'}
-                  className="w-full text-xs font-mono pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#666] focus:bg-white dark:focus:bg-[#161616] focus:border-slate-900 dark:focus:border-white/40 focus:outline-none transition-all shadow-sm"
+                  className="w-full text-xs font-mono pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-slate-400 focus:outline-none transition-all shadow-sm"
                 />
                 <button
                   type="button"

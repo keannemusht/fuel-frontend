@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Unit, UnitCategory } from '@/types';
+import { useUnits } from '@/hooks/useFuelData';
 import {
   Truck,
   Plus,
@@ -51,13 +52,7 @@ export default function UnitsPage() {
   const [lastHm, setLastHm] = useState('0');
   const [isActive, setIsActive] = useState(true);
 
-  const { data: units = [], isLoading } = useQuery<Unit[]>({
-    queryKey: ['units', search],
-    queryFn: async () => {
-      const res = await api.get(`/units?search=${search}`);
-      return res.data.data;
-    },
-  });
+  const { data: units = [], isLoading } = useUnits(search);
 
   const totalPages = Math.ceil(units.length / itemsPerPage) || 1;
   const activePage = Math.min(currentPage, totalPages);
@@ -261,14 +256,8 @@ export default function UnitsPage() {
                   <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-white">{formatNumber(u.lastKm, 1)} KM</td>
                   <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-white">{formatNumber(u.lastHm, 1)} HRS</td>
                   <td className="py-3 px-4 text-center">
-                    <span
-                      className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${
-                        u.isActive !== false
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-[#888] border-slate-200 dark:border-white/[0.08]'
-                      }`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${u.isActive !== false ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                    <span className="inline-flex items-center space-x-1.5 font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                      <span className={`w-1.5 h-1.5 rounded-full ${u.isActive !== false ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                       <span>{u.isActive !== false ? t('common.active', 'ACTIVE') : t('common.inactive', 'INACTIVE')}</span>
                     </span>
                   </td>

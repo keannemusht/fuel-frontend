@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { toast } from 'react-toastify';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface BackdateEntryModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export default function BackdateEntryModal({
   onClose,
   defaultDate,
 }: BackdateEntryModalProps) {
+  const { lang, t } = useLanguage();
   const queryClient = useQueryClient();
 
   const [dateStr, setDateStr] = useState<string>('');
@@ -113,7 +115,7 @@ export default function BackdateEntryModal({
       queryClient.invalidateQueries({ queryKey: ['units'] });
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
 
-      const msg = 'Transaksi log BBM terlewat (backdate) berhasil dicatat!';
+      const msg = lang === 'id' ? 'Transaksi log BBM terlewat (backdate) berhasil dicatat!' : 'Backdate fuel dispense entry recorded successfully!';
       setSuccessMessage(msg);
       toast.success(msg);
       setTimeout(() => {
@@ -122,7 +124,7 @@ export default function BackdateEntryModal({
       }, 1400);
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.error || err.message || 'Gagal menyimpan transaksi backdate';
+      const msg = err.response?.data?.error || err.message || (lang === 'id' ? 'Gagal menyimpan transaksi backdate' : 'Failed to save backdate transaction');
       setErrorMessage(msg);
       toast.error(msg);
     },
@@ -136,25 +138,25 @@ export default function BackdateEntryModal({
     setSuccessMessage(null);
 
     if (!selectedUnitId) {
-      const msg = 'Pilih unit armada terlebih dahulu';
+      const msg = lang === 'id' ? 'Pilih unit armada terlebih dahulu' : 'Please select a fleet unit first';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
     if (!selectedTankId) {
-      const msg = 'Pilih tangki penyimpanan sumber BBM';
+      const msg = lang === 'id' ? 'Pilih tangki penyimpanan sumber BBM' : 'Please select source fuel storage tank';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
     if (!dateStr) {
-      const msg = 'Tentukan tanggal transaksi (YYYY-MM-DD)';
+      const msg = lang === 'id' ? 'Tentukan tanggal transaksi (YYYY-MM-DD)' : 'Please specify transaction date (YYYY-MM-DD)';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
     if (!operator.trim()) {
-      const msg = 'Nama operator atau driver wajib diisi';
+      const msg = lang === 'id' ? 'Nama operator atau driver wajib diisi' : 'Operator or driver name is required';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
@@ -167,35 +169,35 @@ export default function BackdateEntryModal({
     const fuelIn = parseFloat(fuelInLiters) || 0;
 
     if (unitHasKm && km < 0) {
-      const msg = 'Nilai Odometer (KM) tidak boleh negatif (< 0)';
+      const msg = lang === 'id' ? 'Nilai Odometer (KM) tidak boleh negatif (< 0)' : 'Odometer (KM) value cannot be negative (< 0)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
     if (unitHasHm && hm < 0) {
-      const msg = 'Nilai Hour Meter (HM) tidak boleh negatif (< 0)';
+      const msg = lang === 'id' ? 'Nilai Hour Meter (HM) tidak boleh negatif (< 0)' : 'Hour Meter (HM) value cannot be negative (< 0)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
     if (unitHasKwh && kwh < 0) {
-      const msg = 'Nilai KWH Genset tidak boleh negatif (< 0)';
+      const msg = lang === 'id' ? 'Nilai KWH Genset tidak boleh negatif (< 0)' : 'Generator KWH value cannot be negative (< 0)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
     if (vol <= 0 && fuelIn <= 0) {
-      const msg = 'Volume pengisian atau penerimaan BBM harus lebih besar dari 0';
+      const msg = lang === 'id' ? 'Volume pengisian atau penerimaan BBM harus lebih besar dari 0' : 'Dispense or inbound fuel volume must be greater than 0';
       setErrorMessage(msg);
       toast.warning(msg);
       return;
     }
 
     if (bypassValidation && !bypassReason.trim()) {
-      const msg = 'Alasan wajib diisi jika validasi meter dilewati';
+      const msg = lang === 'id' ? 'Alasan wajib diisi jika validasi meter dilewati' : 'Reason is required if meter validation is bypassed';
       setErrorMessage(msg);
       toast.warning(msg);
       return;

@@ -8,34 +8,34 @@
   --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Geist Mono', monospace;
 
-  /* Theme Tokens: Dark (Default) */
-  --bg-app: #000000;
-  --bg-sidebar: #000000;
-  --bg-header: rgba(0, 0, 0, 0.7);
-  --bg-card: #0A0A0A;
-  --bg-surface: #0D0D0D;
-  --bg-elevated: #121212;
-  --bg-input: #1A1A1A;
-  --bg-input-focus: #222222;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-muted: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.2);
-  --text-primary: #FFFFFF;
-  --text-secondary: #EDEDED;
-  --text-muted: #888888;
-  --text-dim: #666666;
-  --btn-primary-bg: #FFFFFF;
-  --btn-primary-text: #000000;
-  --btn-primary-hover: #EAEAEA;
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-text: #999999;
-  --badge-border: rgba(255, 255, 255, 0.08);
-  --table-header: #111111;
-  --table-hover: rgba(255, 255, 255, 0.03);
-  --modal-overlay: rgba(0, 0, 0, 0.8);
-  --scrollbar-track: #000000;
-  --scrollbar-thumb: #262626;
-  --scrollbar-thumb-hover: #404040;
+  /* Theme Tokens: Slate Dark Mode (Default) */
+  --bg-app: #0B0F19;
+  --bg-sidebar: #0B0F19;
+  --bg-header: rgba(11, 15, 25, 0.85);
+  --bg-card: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #1E293B;
+  --bg-input: #0F172A;
+  --bg-input-focus: #1E293B;
+  --border-subtle: #1E293B;
+  --border-muted: #334155;
+  --border-strong: #475569;
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  --btn-primary-bg: #F8FAFC;
+  --btn-primary-text: #0F172A;
+  --btn-primary-hover: #E2E8F0;
+  --badge-bg: rgba(30, 41, 59, 0.7);
+  --badge-text: #CBD5E1;
+  --badge-border: #334155;
+  --table-header: #0F172A;
+  --table-hover: rgba(30, 41, 59, 0.5);
+  --modal-overlay: rgba(2, 6, 23, 0.8);
+  --scrollbar-track: #0B0F19;
+  --scrollbar-thumb: #1E293B;
+  --scrollbar-thumb-hover: #334155;
 }
 
 html.light {
@@ -84,11 +84,11 @@ body {
 
 /* Framer Modern Glass & Surface Classes */
 .framer-card {
-  background: rgba(18, 18, 18, 0.6);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.15);
 }
 
 .framer-card-hover {
@@ -96,22 +96,22 @@ body {
 }
 
 .framer-card-hover:hover {
-  background: rgba(28, 28, 28, 0.7);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--border-strong);
   transform: translateY(-1px);
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.22);
 }
 
 .framer-input {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  color: var(--text-primary);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .framer-input:focus {
-  background: rgba(25, 25, 25, 0.95);
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06), 0 0 20px rgba(255, 255, 255, 0.03);
+  background: var(--bg-input-focus);
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
   outline: none;
 }
 
@@ -170,6 +170,254 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+}
+
+/* ==========================================================================
+   DARK MODE SLATE INDUSTRIAL PALETTE
+   Transforms pitch-black dark mode into high-end executive slate
+   ========================================================================== */
+
+html.dark,
+html:not(.light) {
+  color-scheme: dark;
+}
+
+html.dark body,
+html:not(.light) body {
+  background-color: var(--bg-app) !important;
+  color: var(--text-secondary);
+}
+
+/* Base Canvas & Backgrounds */
+html.dark .bg-\[\#000000\],
+html.dark .bg-black,
+html.dark div.min-h-screen.bg-black,
+html.dark .dark\:bg-\[\#000000\],
+html.dark .dark\:bg-black,
+html:not(.light) .bg-\[\#000000\],
+html:not(.light) .bg-black,
+html:not(.light) .dark\:bg-\[\#000000\],
+html:not(.light) .dark\:bg-black {
+  background-color: var(--bg-app) !important;
+}
+
+/* Persistent & Mobile Sidebar */
+html.dark aside,
+html.dark aside.bg-white,
+html.dark aside.dark\:bg-\[\#000000\],
+html.dark aside.dark\:bg-slate-950,
+html:not(.light) aside {
+  background-color: var(--bg-sidebar) !important;
+  border-color: #1E293B !important;
+}
+
+/* Top Sticky Header */
+html.dark header,
+html:not(.light) header {
+  background-color: var(--bg-header) !important;
+  border-color: #1E293B !important;
+}
+
+/* Primary Cards & Panels (#0A0A0A / framer-card) */
+html.dark .bg-\[\#0A0A0A\],
+html.dark .dark\:bg-\[\#0A0A0A\],
+html.dark .framer-card,
+html:not(.light) .bg-\[\#0A0A0A\],
+html:not(.light) .dark\:bg-\[\#0A0A0A\],
+html:not(.light) .framer-card {
+  background-color: var(--bg-card) !important;
+  border-color: #1E293B !important;
+}
+
+/* Secondary Panels, Status Blocks, Telemetry Containers (#0D0D0D, #0E0E0E) */
+html.dark .bg-\[\#0D0D0D\],
+html.dark .dark\:bg-\[\#0D0D0D\],
+html.dark .bg-\[\#0E0E0E\],
+html.dark .dark\:bg-\[\#0E0E0E\],
+html:not(.light) .bg-\[\#0D0D0D\],
+html:not(.light) .dark\:bg-\[\#0D0D0D\],
+html:not(.light) .bg-\[\#0E0E0E\],
+html:not(.light) .dark\:bg-\[\#0E0E0E\] {
+  background-color: var(--bg-surface) !important;
+  border-color: #334155 !important;
+}
+
+/* Elevated Containers, Modals, Menus, Popovers (#111111, #121212) */
+html.dark .bg-\[\#111111\],
+html.dark .dark\:bg-\[\#111111\],
+html.dark .dark\:bg-\[\#111\],
+html.dark .bg-\[\#121212\],
+html.dark .dark\:bg-\[\#121212\],
+html:not(.light) .bg-\[\#111111\],
+html:not(.light) .dark\:bg-\[\#111111\],
+html:not(.light) .dark\:bg-\[\#111\],
+html:not(.light) .bg-\[\#121212\],
+html:not(.light) .dark\:bg-\[\#121212\] {
+  background-color: var(--bg-elevated) !important;
+  border-color: #334155 !important;
+}
+
+/* Inputs, Keypads, Selects & Textareas (#141414, #171717, #1A1A1A, #1E1E1E, #222222) */
+html.dark .bg-\[\#141414\],
+html.dark .bg-\[\#171717\],
+html.dark .bg-\[\#1A1A1A\],
+html.dark .bg-\[\#222222\],
+html.dark .dark\:bg-\[\#141414\],
+html.dark .dark\:bg-\[\#171717\],
+html.dark .dark\:bg-\[\#1A1A1A\],
+html.dark .dark\:bg-\[\#1E1E1E\],
+html.dark .dark\:bg-\[\#222\],
+html.dark .dark\:bg-\[\#222222\],
+html:not(.light) .bg-\[\#141414\],
+html:not(.light) .bg-\[\#171717\],
+html:not(.light) .bg-\[\#1A1A1A\],
+html:not(.light) .dark\:bg-\[\#141414\],
+html:not(.light) .dark\:bg-\[\#171717\],
+html:not(.light) .dark\:bg-\[\#1A1A1A\],
+html:not(.light) .dark\:bg-\[\#1E1E1E\],
+html:not(.light) .dark\:bg-\[\#222222\] {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+/* Form inputs & select in Dark Mode */
+html.dark input:not([type='checkbox']):not([type='radio']),
+html.dark select,
+html.dark textarea,
+html:not(.light) input:not([type='checkbox']):not([type='radio']),
+html:not(.light) select,
+html:not(.light) textarea {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus,
+html:not(.light) input:focus,
+html:not(.light) select:focus,
+html:not(.light) textarea:focus {
+  background-color: #1E293B !important;
+  border-color: #64748B !important;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12) !important;
+}
+
+/* Subtle Borders in Slate Dark Mode */
+html.dark .border-white\/\[0\.08\],
+html.dark .border-white\/\[0\.06\],
+html.dark .border-white\/\[0\.05\],
+html.dark .border-white\/\[0\.1\],
+html.dark .border-white\/\[0\.12\],
+html.dark .border-white\/15,
+html.dark .border-white\/10,
+html.dark .border-white\/20,
+html.dark .dark\:border-white\/\[0\.08\],
+html.dark .dark\:border-white\/\[0\.06\],
+html.dark .dark\:border-white\/\[0\.05\],
+html.dark .dark\:border-white\/\[0\.1\],
+html.dark .dark\:border-white\/\[0\.12\],
+html.dark .dark\:border-white\/15,
+html.dark .dark\:border-white\/10,
+html.dark .dark\:border-white\/20,
+html:not(.light) .border-white\/\[0\.08\],
+html:not(.light) .border-white\/\[0\.06\],
+html:not(.light) .border-white\/\[0\.1\],
+html:not(.light) .dark\:border-white\/\[0\.08\],
+html:not(.light) .dark\:border-white\/\[0\.06\],
+html:not(.light) .dark\:border-white\/\[0\.1\] {
+  border-color: #1E293B !important;
+}
+
+html.dark .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-white\/\[0\.06\] > :not([hidden]) ~ :not([hidden]),
+html:not(.light) .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
+html:not(.light) .divide-white\/\[0\.06\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1E293B !important;
+}
+
+/* Badges / Chips in Slate Dark Mode */
+html.dark .bg-white\/\[0\.04\],
+html.dark .bg-white\/\[0\.05\],
+html.dark .bg-white\/\[0\.06\],
+html.dark .bg-white\/10,
+html.dark .dark\:bg-white\/\[0\.04\],
+html.dark .dark\:bg-white\/\[0\.05\],
+html.dark .dark\:bg-white\/\[0\.06\],
+html.dark .dark\:bg-white\/10,
+html:not(.light) .bg-white\/\[0\.04\],
+html:not(.light) .bg-white\/\[0\.05\],
+html:not(.light) .bg-white\/\[0\.06\],
+html:not(.light) .dark\:bg-white\/\[0\.04\],
+html:not(.light) .dark\:bg-white\/\[0\.05\],
+html:not(.light) .dark\:bg-white\/\[0\.06\] {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: #334155 !important;
+  color: #CBD5E1 !important;
+}
+
+/* Table Header & Hover in Slate Dark Mode */
+html.dark table thead tr,
+html.dark table tr.bg-\[\#111111\],
+html.dark table thead th,
+html:not(.light) table thead tr,
+html:not(.light) table thead th {
+  background-color: #0F172A !important;
+  border-color: #1E293B !important;
+  color: #94A3B8 !important;
+}
+
+html.dark table tbody tr:hover,
+html:not(.light) table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+/* Typography tones in Slate Dark Mode */
+html.dark .text-\[\#888888\],
+html.dark .text-\[\#888\],
+html.dark .dark\:text-\[\#888888\],
+html.dark .dark\:text-\[\#888\],
+html:not(.light) .text-\[\#888888\],
+html:not(.light) .text-\[\#888\] {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-\[\#666666\],
+html.dark .text-\[\#666\],
+html.dark .dark\:text-\[\#666666\],
+html.dark .dark\:text-\[\#666\],
+html:not(.light) .text-\[\#666666\],
+html:not(.light) .text-\[\#666\] {
+  color: #64748B !important;
+}
+
+html.dark .text-\[\#AAA\],
+html.dark .text-\[\#999\],
+html.dark .dark\:text-\[\#AAA\],
+html.dark .dark\:text-\[\#999\],
+html:not(.light) .text-\[\#AAA\],
+html:not(.light) .text-\[\#999\] {
+  color: #CBD5E1 !important;
+}
+
+/* Active Nav in Sidebar (Dark Mode) */
+html.dark aside nav a.fms-nav-active,
+html:not(.light) aside nav a.fms-nav-active {
+  background-color: #1E293B !important;
+  color: #FFFFFF !important;
+  border-color: #334155 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3) !important;
+}
+
+html.dark aside nav a.fms-nav-inactive,
+html:not(.light) aside nav a.fms-nav-inactive {
+  color: #94A3B8 !important;
+}
+
+html.dark aside nav a.fms-nav-inactive:hover,
+html:not(.light) aside nav a.fms-nav-inactive:hover {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
 }
 
 /* ==========================================================================
@@ -313,31 +561,7 @@ html.light .divide-white\/\[0\.06\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--border-subtle) !important;
 }
 
-/* Typography in Light Mode: map text-white to dark text ONLY on elements intended for dark mode */
-html.light .text-white:not(.text-white-forced):not(.bg-slate-900):not(.bg-slate-900 *):not(.bg-black):not(.bg-black *):not(button.bg-slate-900):not(button.bg-slate-900 *):not(button.bg-black):not(button.bg-black *) {
-  color: var(--text-primary) !important;
-}
-
-/* Dark elements, badges, and primary buttons MUST retain crisp white text in Light Mode */
-html.light .text-white-forced,
-html.light .text-white-forced *,
-html.light button.bg-slate-900,
-html.light button.bg-slate-900 *,
-html.light button.bg-black,
-html.light button.bg-black *,
-html.light a.bg-slate-900,
-html.light a.bg-slate-900 *,
-html.light .bg-slate-900.text-white,
-html.light .bg-black.text-white {
-  color: #FFFFFF !important;
-}
-
-html.light .text-white\/90,
-html.light .text-white\/80 {
-  color: var(--text-secondary) !important;
-}
-
-html.light .text-white\/70,
+/* Typography fallbacks for legacy arbitrary gray text classes */
 html.light .text-\[\#888888\],
 html.light .text-\[\#777\],
 html.light .text-\[\#777777\] {

@@ -5,6 +5,7 @@ import { Unit } from '@/types';
 import { CheckCircle2, AlertTriangle, XCircle, ShieldAlert, Zap, Info } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface LiveMeterValidatorProps {
   unit: Unit | null;
@@ -29,10 +30,14 @@ export default function LiveMeterValidator({
   onChangeBypassReason,
   isAdmin,
 }: LiveMeterValidatorProps) {
+  const { lang } = useLanguage();
+
   if (!unit) {
     return (
       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0D0D0D] border border-dashed border-slate-200 dark:border-white/[0.08] text-center text-slate-500 dark:text-[#888888] text-xs">
-        Pilih unit alat berat atau armada untuk mengaktifkan validasi meter otomatis.
+        {lang === 'id'
+          ? 'Pilih unit alat berat atau armada untuk mengaktifkan validasi meter otomatis.'
+          : 'Select a heavy equipment unit or fleet to activate automatic meter validation.'}
       </div>
     );
   }
@@ -76,10 +81,12 @@ export default function LiveMeterValidator({
       <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs space-y-1">
         <div className="flex items-center space-x-2 font-semibold">
           <Info className="w-4 h-4 shrink-0" />
-          <span>Pengisian Direct Volume (Tanpa Alat Ukur / Non-Meter)</span>
+          <span>{lang === 'id' ? 'Pengisian Direct Volume (Tanpa Alat Ukur / Non-Meter)' : 'Direct Volume Dispense (Non-Metered)'}</span>
         </div>
         <p className="text-[11px] text-amber-600/90 dark:text-amber-400/80 pl-6">
-          Unit {unit.unitCode} ({unit.category}) tidak menggunakan Hour Meter maupun Odometer. Cukup masukkan QTY Out (Liter) yang disalurkan.
+          {lang === 'id'
+            ? `Unit ${unit.unitCode} (${unit.category}) tidak menggunakan Hour Meter maupun Odometer. Cukup masukkan QTY Out (Liter) yang disalurkan.`
+            : `Unit ${unit.unitCode} (${unit.category}) does not use Hour Meter or Odometer. Simply enter QTY Out (Liters) dispensed.`}
         </p>
       </div>
     );
@@ -101,16 +108,16 @@ export default function LiveMeterValidator({
         {/* Odometer Card (KM) */}
         {hasKm && (
           <div
-            className={`p-4 rounded-2xl border transition-all duration-300 ${
+            className={`p-4 rounded-2xl border transition-all duration-200 ${
               !isKmProvided
                 ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08]'
                 : isKmNegative
-                ? 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
                 : isKmValid
-                ? 'bg-emerald-50/80 dark:bg-[#0D140E] border-emerald-300 dark:border-emerald-500/30'
+                ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-300 dark:border-white/20'
                 : bypassValidation
-                ? 'bg-amber-50/80 dark:bg-[#17130A] border-amber-300 dark:border-amber-500/30'
-                : 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
+                : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
@@ -131,11 +138,11 @@ export default function LiveMeterValidator({
 
               {isKmProvided && (
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold ${
                     isKmNegative
                       ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
                       : isKmValid
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                      ? 'bg-slate-100 text-slate-700 dark:bg-white/[0.06] dark:text-slate-300 border border-slate-200/80 dark:border-white/10'
                       : bypassValidation
                       ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                       : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
@@ -152,19 +159,23 @@ export default function LiveMeterValidator({
                 {isKmNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Rule Violation: Nilai KM tidak boleh negatif (&lt; 0)</span>
+                    <span>{lang === 'id' ? 'Rule Violation: Nilai KM tidak boleh negatif (< 0)' : 'Rule Violation: KM value cannot be negative (< 0)'}</span>
                   </span>
                 )}
                 {isKmDecreasing && !isKmNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>KM turun ({formatNumber(deltaKm, 1)} KM dari {formatNumber(lastKm, 1)} KM)</span>
+                    <span>
+                      {lang === 'id'
+                        ? `KM turun (${formatNumber(deltaKm, 1)} KM dari ${formatNumber(lastKm, 1)} KM)`
+                        : `KM decreased (${formatNumber(deltaKm, 1)} KM from ${formatNumber(lastKm, 1)} KM)`}
+                    </span>
                   </span>
                 )}
                 {isKmExceeded && !isKmNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Melebihi batas toleransi 1.000 KM per shift</span>
+                    <span>{lang === 'id' ? 'Melebihi batas toleransi 1.000 KM per shift' : 'Exceeds tolerance limit of 1,000 KM per shift'}</span>
                   </span>
                 )}
                 {isKmValid && (
@@ -181,16 +192,16 @@ export default function LiveMeterValidator({
         {/* Hour Meter Card (HM) */}
         {hasHm && (
           <div
-            className={`p-4 rounded-2xl border transition-all duration-300 ${
+            className={`p-4 rounded-2xl border transition-all duration-200 ${
               !isHmProvided
                 ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08]'
                 : isHmNegative
-                ? 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
                 : isHmValid
-                ? 'bg-emerald-50/80 dark:bg-[#0D140E] border-emerald-300 dark:border-emerald-500/30'
+                ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-300 dark:border-white/20'
                 : bypassValidation
-                ? 'bg-amber-50/80 dark:bg-[#17130A] border-amber-300 dark:border-amber-500/30'
-                : 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
+                : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
@@ -211,11 +222,11 @@ export default function LiveMeterValidator({
 
               {isHmProvided && (
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold ${
                     isHmNegative
                       ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
                       : isHmValid
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                      ? 'bg-slate-100 text-slate-700 dark:bg-white/[0.06] dark:text-slate-300 border border-slate-200/80 dark:border-white/10'
                       : bypassValidation
                       ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                       : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
@@ -232,23 +243,27 @@ export default function LiveMeterValidator({
                 {isHmNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Nilai Hour Meter (HM) tidak boleh bernilai negatif (&lt; 0)</span>
+                    <span>{lang === 'id' ? 'Nilai Hour Meter (HM) tidak boleh bernilai negatif (< 0)' : 'Hour Meter (HM) cannot be negative (< 0)'}</span>
                   </span>
                 )}
                 {isHmDecreasing && !isHmNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>
-                      {currentHm === lastHm
-                        ? `HM (${formatNumber(currentHm, 1)}) tidak boleh sama dengan HM sebelumnya (${formatNumber(lastHm, 1)})`
-                        : `HM (${formatNumber(currentHm, 1)}) tidak boleh lebih kecil dari HM sebelumnya (${formatNumber(lastHm, 1)})`}
+                      {lang === 'id'
+                        ? (currentHm === lastHm
+                            ? `HM (${formatNumber(currentHm, 1)}) tidak boleh sama dengan HM sebelumnya (${formatNumber(lastHm, 1)})`
+                            : `HM (${formatNumber(currentHm, 1)}) tidak boleh lebih kecil dari HM sebelumnya (${formatNumber(lastHm, 1)})`)
+                        : (currentHm === lastHm
+                            ? `HM (${formatNumber(currentHm, 1)}) cannot be equal to previous HM (${formatNumber(lastHm, 1)})`
+                            : `HM (${formatNumber(currentHm, 1)}) cannot be lower than previous HM (${formatNumber(lastHm, 1)})`)}
                     </span>
                   </span>
                 )}
                 {isHmExceeded && !isHmDecreasing && !isHmNegative && (
                   <span className="text-amber-600 dark:text-amber-400 flex items-center space-x-1 font-medium">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Info: Delta HM (+{formatNumber(deltaHm, 1)} HRS) melewati 24 jam</span>
+                    <span>{lang === 'id' ? `Info: Delta HM (+${formatNumber(deltaHm, 1)} HRS) melewati 24 jam` : `Info: Delta HM (+${formatNumber(deltaHm, 1)} HRS) exceeds 24 hours`}</span>
                   </span>
                 )}
                 {isHmValid && !isHmExceeded && (
@@ -269,22 +284,22 @@ export default function LiveMeterValidator({
         {/* KWH Card (for Genset) */}
         {hasKwh && (
           <div
-            className={`p-4 rounded-2xl border transition-all duration-300 ${
+            className={`p-4 rounded-2xl border transition-all duration-200 ${
               !isKwhProvided
                 ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08]'
                 : isKwhNegative
-                ? 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
                 : isKwhValid
-                ? 'bg-emerald-50/80 dark:bg-[#0D140E] border-emerald-300 dark:border-emerald-500/30'
+                ? 'bg-slate-50 dark:bg-[#0D0D0D] border-slate-300 dark:border-white/20'
                 : bypassValidation
-                ? 'bg-amber-50/80 dark:bg-[#17130A] border-amber-300 dark:border-amber-500/30'
-                : 'bg-rose-50/80 dark:bg-[#180A0A] border-rose-300 dark:border-rose-500/40 shadow-sm'
+                ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
+                : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-medium text-slate-500 dark:text-[#888888] tracking-wide flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-500" />
-                Daya Genset (KWH)
+                <Zap className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+                {lang === 'id' ? 'Daya Genset (KWH)' : 'Genset Output (KWH)'}
               </span>
               <span className="text-[11px] font-mono text-slate-500 dark:text-[#888888]">
                 Prev: <strong className="text-slate-900 dark:text-white font-medium">{formatNumber(lastKwh, 1)}</strong>
@@ -300,11 +315,11 @@ export default function LiveMeterValidator({
 
               {isKwhProvided && (
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold ${
                     isKwhNegative
                       ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
                       : isKwhValid
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                      ? 'bg-slate-100 text-slate-700 dark:bg-white/[0.06] dark:text-slate-300 border border-slate-200/80 dark:border-white/10'
                       : bypassValidation
                       ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                       : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
@@ -321,13 +336,13 @@ export default function LiveMeterValidator({
                 {isKwhNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Nilai KWH tidak boleh negatif (&lt; 0)</span>
+                    <span>{lang === 'id' ? 'Nilai KWH tidak boleh negatif (< 0)' : 'KWH value cannot be negative (< 0)'}</span>
                   </span>
                 )}
                 {isKwhDecreasing && !isKwhNegative && (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center space-x-1 font-medium">
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>KWH tidak boleh lebih kecil dari KWH sebelumnya ({formatNumber(lastKwh, 1)})</span>
+                    <span>{lang === 'id' ? `KWH tidak boleh lebih kecil dari KWH sebelumnya (${formatNumber(lastKwh, 1)})` : `KWH cannot be lower than previous KWH (${formatNumber(lastKwh, 1)})`}</span>
                   </span>
                 )}
                 {isKwhValid && (
@@ -349,7 +364,7 @@ export default function LiveMeterValidator({
             <div className="flex items-center space-x-2">
               <ShieldAlert className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span className="text-xs font-semibold text-slate-900 dark:text-white">
-                Admin Validation Bypass
+                {lang === 'id' ? 'Bypass Validasi Admin' : 'Admin Validation Bypass'}
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -372,7 +387,7 @@ export default function LiveMeterValidator({
                 className="mt-3 space-y-1.5 pt-2.5 border-t border-slate-200 dark:border-white/[0.06]"
               >
                 <label className="text-[11px] font-medium text-slate-500 dark:text-[#888888]">
-                  Override Justification (Audit Logged):
+                  {lang === 'id' ? 'Justifikasi Override (Tercatat di Audit Log):' : 'Override Justification (Audit Logged):'}
                 </label>
                 <input
                   type="text"

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface HistoricalLogModalProps {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export default function HistoricalLogModal({
   editingLog,
   defaultDate,
 }: HistoricalLogModalProps) {
+  const { lang, t } = useLanguage();
   const isEditing = Boolean(editingLog);
 
   const [formData, setFormData] = useState({
@@ -115,13 +117,13 @@ export default function HistoricalLogModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.unitCode.trim()) {
-      const msg = 'Nomor / Kode Unit wajib diisi';
+      const msg = lang === 'id' ? 'Nomor / Kode Unit wajib diisi' : 'Unit Code / Number is required';
       setError(msg);
       toast.warning(msg);
       return;
     }
     if (!formData.dateStr) {
-      const msg = 'Tanggal transaksi wajib diisi';
+      const msg = lang === 'id' ? 'Tanggal transaksi wajib diisi' : 'Transaction date is required';
       setError(msg);
       toast.warning(msg);
       return;
@@ -149,16 +151,24 @@ export default function HistoricalLogModal({
 
       if (isEditing && editingLog) {
         await api.put(`/fuel/logs/${editingLog.id}`, payload);
-        toast.success(`Log transaksi #${editingLog.no || ''} berhasil diperbarui!`);
+        toast.success(
+          lang === 'id'
+            ? `Log transaksi #${editingLog.no || ''} berhasil diperbarui!`
+            : `Transaction log #${editingLog.no || ''} updated successfully!`
+        );
       } else {
         await api.post('/fuel/logs', payload);
-        toast.success('Log transaksi BBM manual berhasil ditambahkan!');
+        toast.success(
+          lang === 'id'
+            ? 'Log transaksi BBM manual berhasil ditambahkan!'
+            : 'Manual fuel log transaction added successfully!'
+        );
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Gagal menyimpan data log transaksi BBM';
+      const msg = err.response?.data?.message || (lang === 'id' ? 'Gagal menyimpan data log transaksi BBM' : 'Failed to save fuel transaction log');
       setError(msg);
       toast.error(msg);
     } finally {

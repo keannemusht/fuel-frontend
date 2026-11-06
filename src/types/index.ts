@@ -64,6 +64,9 @@ export interface StorageTank {
   minStockAlertLiters: number;
   fuelType: string;
   tankType?: 'STATIONARY' | 'MOBILE_TRUCK';
+  site?: string;
+  slocCode?: string;
+  projectArea?: string;
   location?: string;
 }
 
@@ -110,6 +113,8 @@ export interface FuelLog {
   stockAkhir: number;
   totalFuelIn: number;
   fuelmanName: string;
+  site?: string;
+  slocCode?: string;
   sourceType?: string;
   flowAwal?: number | null;
   flowAkhir?: number | null;
