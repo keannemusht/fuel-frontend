@@ -14,6 +14,8 @@ import SearchableFleetSelect from '@/components/shared/SearchableFleetSelect';
 import SearchableOperatorSelect from '@/components/shared/SearchableOperatorSelect';
 import InboundFuelModal from '@/components/dispenser/InboundFuelModal';
 import StockTransferModal from '@/components/dispenser/StockTransferModal';
+import { enqueueOfflineDispense } from '@/lib/offlineQueue';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 import {
   Fuel,
   Truck,
@@ -44,6 +46,7 @@ export default function DispenserPage() {
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
+  const { isOnline, refreshQueue } = useOfflineSync();
 
   // Mode Selection: Fuel Station (Stationary Main Senyiur) vs Fuel Truck (FT 101 / FT 102)
   const [sourceMode, setSourceMode] = useState<'STATIONARY' | 'FUEL_TRUCK'>('STATIONARY');
@@ -191,7 +194,50 @@ export default function DispenserPage() {
 
       setTimeout(() => setSuccessMessage(null), 6000);
     },
-    onError: (err: any) => {
+    onError: async (err: any, variables: any) => {
+      const isNetworkFailure =
+        !err.response ||
+        err.code === 'ERR_NETWORK' ||
+        err.message?.includes('Network Error');
+
+      if (isNetworkFailure) {
+        try {
+          await enqueueOfflineDispense('/fuel/dispense', variables, {
+            unitCode: selectedUnit?.unitCode,
+            unitId: selectedUnitId,
+            tankId: selectedTankId,
+            volumeLiters: variables.volumeLiters,
+            shift: computedShift,
+            operator: operator.trim(),
+            jamStr: liveWitaTime || undefined,
+          });
+          await refreshQueue();
+
+          const fallbackMsg =
+            lang === 'id'
+              ? `Sinyal terputus: Transaksi ${selectedUnit?.unitCode || 'Unit'} (${variables.volumeLiters} L) diamankan di penyimpanan tablet. Akan dikirim otomatis saat online.`
+              : `Signal dropped: Transaction for ${selectedUnit?.unitCode || 'Unit'} (${variables.volumeLiters} L) saved locally. Will auto-sync when online.`;
+          setSuccessMessage(fallbackMsg);
+          toast.info(fallbackMsg, { autoClose: 7000 });
+          setErrorMessage(null);
+
+          // Reset Form
+          setVolumeLiters('');
+          setCurrentKm('');
+          setCurrentHm('');
+          setCurrentKwh('');
+          setFlowAwal('');
+          setFlowAkhir('');
+          setBypassValidation(false);
+          setBypassReason('');
+
+          setTimeout(() => setSuccessMessage(null), 8000);
+          return;
+        } catch (enqueueErr) {
+          console.error('Failed to queue offline dispense:', enqueueErr);
+        }
+      }
+
       const msg = err.response?.data?.message || err.message || (lang === 'id' ? 'Transaksi gagal diproses.' : 'Transaction failed.');
       setErrorMessage(msg);
       toast.error(msg);
@@ -301,7 +347,7 @@ export default function DispenserPage() {
     const fAwal = flowAwal ? parseFloat(flowAwal) : undefined;
     const fAkhir = flowAkhir ? parseFloat(flowAkhir) : undefined;
 
-    dispenseMutation.mutate({
+    const payload = {
       unitId: selectedUnitId,
       tankId: selectedTankId,
       currentKm: unitHasKm ? km : undefined,
@@ -318,7 +364,45 @@ export default function DispenserPage() {
       totalisatorQty: fAkhir && fAwal ? parseFloat((fAkhir - fAwal).toFixed(2)) : undefined,
       bypassValidation,
       bypassReason: bypassValidation ? bypassReason : undefined,
-    });
+    };
+
+    // If device is offline, enqueue directly to IndexedDB
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      enqueueOfflineDispense('/fuel/dispense', payload, {
+        unitCode: selectedUnit?.unitCode,
+        unitId: selectedUnitId,
+        tankId: selectedTankId,
+        volumeLiters: vol,
+        shift: computedShift,
+        operator: operator.trim(),
+        jamStr: liveWitaTime || undefined,
+      }).then(() => {
+        refreshQueue();
+        const successMsg =
+          lang === 'id'
+            ? `Mode Offline: Transaksi unit ${selectedUnit?.unitCode} (${vol} L) tersimpan di perangkat. Akan otomatis tersinkron saat ada sinyal.`
+            : `Offline Mode: Transaction for ${selectedUnit?.unitCode} (${vol} L) saved locally. Will sync automatically when online.`;
+        setSuccessMessage(successMsg);
+        toast.info(successMsg, { autoClose: 7000 });
+        setErrorMessage(null);
+
+        // Reset Form
+        setVolumeLiters('');
+        setCurrentKm('');
+        setCurrentHm('');
+        setCurrentKwh('');
+        setFlowAwal('');
+        setFlowAkhir('');
+        setBypassValidation(false);
+        setBypassReason('');
+        setTimeout(() => setSuccessMessage(null), 8000);
+      }).catch((enqueueErr) => {
+        console.error('Offline enqueue error:', enqueueErr);
+      });
+      return;
+    }
+
+    dispenseMutation.mutate(payload);
   };
 
   const handleKeypadPress = (val: string) => {

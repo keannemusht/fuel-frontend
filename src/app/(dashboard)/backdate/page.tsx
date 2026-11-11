@@ -45,6 +45,8 @@ import SearchableOperatorSelect from '@/components/shared/SearchableOperatorSele
 import CustomSelect, { CustomSelectOption } from '@/components/shared/CustomSelect';
 import { toast } from 'react-toastify';
 import { getUnitVisualConfig } from '@/lib/unitVisuals';
+import { enqueueOfflineDispense } from '@/lib/offlineQueue';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 
 const BACKDATE_SHIFT_OPTIONS: CustomSelectOption[] = [
   {
@@ -67,6 +69,7 @@ export default function BackdatePage() {
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
+  const { refreshQueue } = useOfflineSync();
 
   // Helper date defaults
   const getTodayStr = () => new Date().toISOString().slice(0, 10);
@@ -436,7 +439,7 @@ export default function BackdatePage() {
       return;
     }
 
-    backdateMutation.mutate({
+    const payload = {
       unitId: selectedUnitId,
       tankId: selectedTankId,
       currentKm: unitHasKm ? (isNaN(parsedKm) ? 0 : parsedKm) : 0,
@@ -451,7 +454,43 @@ export default function BackdatePage() {
       fuelmanName: fuelmanName.trim(),
       bypassValidation,
       bypassReason: bypassValidation ? bypassReason.trim() : undefined,
-    });
+    };
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      enqueueOfflineDispense('/fuel/backdate', payload, {
+        unitCode: selectedUnit?.unitCode,
+        unitId: selectedUnitId,
+        tankId: selectedTankId,
+        volumeLiters: isNaN(vol) ? 0 : vol,
+        shift,
+        operator: operator.trim(),
+        dateStr,
+        jamStr,
+      }).then(() => {
+        refreshQueue();
+        const successMsg =
+          lang === 'id'
+            ? `Mode Offline: Transaksi susulan unit ${selectedUnit?.unitCode} tersimpan di perangkat. Akan otomatis tersinkron saat ada sinyal.`
+            : `Offline Mode: Backdate entry for ${selectedUnit?.unitCode} saved locally. Will sync automatically when online.`;
+        setSuccessMessage(successMsg);
+        toast.info(successMsg, { autoClose: 7000 });
+        setErrorMessage(null);
+
+        // Reset inputs
+        setVolumeLiters('');
+        setCurrentKm('');
+        setCurrentHm('');
+        setCurrentKwh('');
+        setBypassValidation(false);
+        setBypassReason('');
+        setTimeout(() => setSuccessMessage(null), 8000);
+      }).catch((enqueueErr) => {
+        console.error('Offline enqueue error in backdate:', enqueueErr);
+      });
+      return;
+    }
+
+    backdateMutation.mutate(payload);
   };
 
   const getCategoryColor = (_cat: string) => {

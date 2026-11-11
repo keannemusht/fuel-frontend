@@ -9,6 +9,7 @@ import ProfileDropdown from './ProfileDropdown';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { useSite } from '@/components/providers/SiteProvider';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 import { toast } from 'react-toastify';
 
 interface HeaderProps {
@@ -19,6 +20,7 @@ export default function Header({ onOpenMobileMenu }: HeaderProps) {
   const { user } = useAuth();
   const { lang, t } = useLanguage();
   const { site, setSite, siteLabel } = useSite();
+  const { isOnline, pendingCount, isSyncing, flushQueue } = useOfflineSync();
   const [showSiteMenu, setShowSiteMenu] = useState(false);
   const siteMenuRef = useRef<HTMLDivElement>(null);
 
@@ -225,8 +227,34 @@ export default function Header({ onOpenMobileMenu }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right: Profile Menu Dropdown */}
-      <div className="flex items-center">
+      {/* Right: Offline Indicator & Profile Menu Dropdown */}
+      <div className="flex items-center space-x-2">
+        {(!isOnline || pendingCount > 0) && (
+          <button
+            type="button"
+            onClick={isOnline && pendingCount > 0 ? flushQueue : undefined}
+            disabled={isSyncing}
+            className={`flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer select-none transition-all ${
+              !isOnline
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/20'
+            }`}
+            title={!isOnline ? 'Perangkat dalam mode offline' : 'Klik untuk sinkronkan data tertunda'}
+          >
+            {!isOnline ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            )}
+            <span className="font-semibold text-[11px] font-mono">
+              {!isOnline
+                ? `Offline (${pendingCount})`
+                : isSyncing
+                ? 'Syncing...'
+                : `Sync (${pendingCount})`}
+            </span>
+          </button>
+        )}
         <ProfileDropdown />
       </div>
     </header>

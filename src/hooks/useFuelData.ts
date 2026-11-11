@@ -12,6 +12,7 @@ import {
   AuditLog,
   StockTransfer,
 } from '@/types';
+import { cacheMasterData, getCachedMasterData } from '@/lib/offlineQueue';
 
 // ==========================================
 // TANKS HOOKS
@@ -20,8 +21,20 @@ export function useTanks() {
   return useQuery<StorageTank[]>({
     queryKey: ['tanks'],
     queryFn: async () => {
-      const res = await api.get('/tanks');
-      return res.data.data;
+      try {
+        const res = await api.get('/tanks');
+        if (res.data?.data) {
+          cacheMasterData('tanks', res.data.data);
+        }
+        return res.data.data;
+      } catch (err) {
+        // Fallback to IndexedDB cache when offline
+        const cached = await getCachedMasterData<StorageTank[]>('tanks');
+        if (cached && cached.length > 0) {
+          return cached;
+        }
+        throw err;
+      }
     },
     staleTime: 30000,
   });
@@ -37,8 +50,32 @@ export function useUnits(search?: string, category?: string) {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (category) params.append('category', category);
-      const res = await api.get(`/units?${params.toString()}`);
-      return res.data.data;
+      try {
+        const res = await api.get(`/units?${params.toString()}`);
+        if (res.data?.data && !search && !category) {
+          cacheMasterData('units', res.data.data);
+        }
+        return res.data.data;
+      } catch (err) {
+        // Fallback to IndexedDB cache when offline
+        const cached = await getCachedMasterData<Unit[]>('units');
+        if (cached && cached.length > 0) {
+          let filtered = cached;
+          if (search) {
+            const term = search.toLowerCase();
+            filtered = filtered.filter(
+              (u) =>
+                u.unitCode.toLowerCase().includes(term) ||
+                (u.makeModel && u.makeModel.toLowerCase().includes(term))
+            );
+          }
+          if (category) {
+            filtered = filtered.filter((u) => u.category === category);
+          }
+          return filtered;
+        }
+        throw err;
+      }
     },
     staleTime: 60000,
   });
