@@ -201,7 +201,7 @@ export default function Header({ onOpenMobileMenu }: HeaderProps) {
               >
                 <div className="flex flex-col">
                   <span>Site Senyiur</span>
-                  <span className="text-[10px] text-slate-400 font-mono font-normal">Sloc: MTK001 (SNY)</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-normal">Sloc: MTK004 (SNY)</span>
                 </div>
                 {site === 'SENYIUR' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
               </button>

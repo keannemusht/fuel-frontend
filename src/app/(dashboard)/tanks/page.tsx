@@ -45,7 +45,7 @@ export default function TanksPage() {
   const [currentStockLiters, setCurrentStockLiters] = useState('45000');
   const [minStockAlertLiters, setMinStockAlertLiters] = useState('5000');
   const [tankSite, setTankSite] = useState<'SENYIUR' | 'MUARA_PAHU'>('SENYIUR');
-  const [slocCode, setSlocCode] = useState('MTK001');
+  const [slocCode, setSlocCode] = useState('MTK004');
 
   const { data: tanks = [], isLoading } = useTanks();
 
@@ -79,7 +79,7 @@ export default function TanksPage() {
         currentStockLiters: parseFloat(currentStockLiters) || 0,
         minStockAlertLiters: parseFloat(minStockAlertLiters) || 0,
         site: tankSite,
-        slocCode: slocCode.trim().toUpperCase() || (tankSite === 'MUARA_PAHU' ? 'MTK003' : 'MTK001'),
+        slocCode: slocCode.trim().toUpperCase() || (tankSite === 'MUARA_PAHU' ? 'MTK003' : 'MTK004'),
         projectArea: tankSite === 'MUARA_PAHU' ? 'MPH' : 'SNY',
       };
 
@@ -133,7 +133,7 @@ export default function TanksPage() {
     setCurrentStockLiters('45000');
     setMinStockAlertLiters('5000');
     setTankSite(selectedSite === 'MUARA_PAHU' ? 'MUARA_PAHU' : 'SENYIUR');
-    setSlocCode(selectedSite === 'MUARA_PAHU' ? 'MTK003' : 'MTK001');
+    setSlocCode(selectedSite === 'MUARA_PAHU' ? 'MTK003' : 'MTK004');
     setErrorMessage(null);
   };
 
@@ -151,7 +151,7 @@ export default function TanksPage() {
     setCurrentStockLiters(String(tank.currentStockLiters));
     setMinStockAlertLiters(String(tank.minStockAlertLiters));
     setTankSite((tank.site as 'SENYIUR' | 'MUARA_PAHU') || 'SENYIUR');
-    setSlocCode(tank.slocCode || (tank.site === 'MUARA_PAHU' ? 'MTK003' : 'MTK001'));
+    setSlocCode(tank.slocCode || (tank.site === 'MUARA_PAHU' ? 'MTK003' : 'MTK004'));
     setErrorMessage(null);
     setShowTankModal(true);
   };
@@ -320,7 +320,7 @@ export default function TanksPage() {
                       {isMuaraPahu ? 'Site Muara Pahu (MPH)' : 'Site Senyiur (SNY)'}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.06]">
-                      Sloc: <strong className="text-slate-900 dark:text-white font-mono">{tank.slocCode || (isMuaraPahu ? 'MTK003' : 'MTK001')}</strong>
+                      Sloc: <strong className="text-slate-900 dark:text-white font-mono">{tank.slocCode || (isMuaraPahu ? 'MTK003' : 'MTK004')}</strong>
                     </span>
                     {tank.tankType === 'MOBILE_TRUCK' || tank.tankCode.includes('FT') ? (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-white/[0.06] flex items-center gap-1">
@@ -506,10 +506,10 @@ export default function TanksPage() {
                       onChange={(e) => {
                         const val = e.target.value as 'SENYIUR' | 'MUARA_PAHU';
                         setTankSite(val);
-                        if (val === 'MUARA_PAHU' && (slocCode === 'MTK001' || !slocCode)) {
+                        if (val === 'MUARA_PAHU' && (slocCode === 'MTK004' || !slocCode)) {
                           setSlocCode('MTK003');
                         } else if (val === 'SENYIUR' && slocCode === 'MTK003') {
-                          setSlocCode('MTK001');
+                          setSlocCode('MTK004');
                         }
                       }}
                       className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white font-medium focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
@@ -526,7 +526,7 @@ export default function TanksPage() {
                       required
                       value={slocCode}
                       onChange={(e) => setSlocCode(e.target.value.toUpperCase())}
-                      placeholder="e.g. MTK001 / MTK003 / FTK001"
+                      placeholder="e.g. MTK004 / MTK003 / FT001"
                       className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-[#1A1A1A] border border-slate-200 dark:border-white/[0.1] text-slate-900 dark:text-white font-mono uppercase focus:border-slate-400 dark:focus:border-white/30 focus:outline-none"
                     />
                   </div>

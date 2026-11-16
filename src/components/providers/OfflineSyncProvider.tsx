@@ -297,3 +297,4 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
     </OfflineSyncContext.Provider>
   );
 }
+
