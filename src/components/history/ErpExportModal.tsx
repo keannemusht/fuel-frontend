@@ -72,7 +72,6 @@ export default function ErpExportModal({
   const monthIdx = parseInt(selectedMonth, 10) - 1;
   const monthNameErp = monthIdx >= 0 && monthIdx < 12 ? MONTH_NAMES_ERP[monthIdx] : selectedMonth;
   const targetSiteCode = selectedSite === 'MUARA_PAHU' ? 'MUARAPAHU' : 'SENYIUR';
-  const otherSiteLabel = selectedSite === 'MUARA_PAHU' ? 'Senyiur' : 'Muara Pahu';
 
   // Computed File Name
   const scopeSuffix = scope === 'other_consumption' ? '_OTHER_CONSUMPTION' : '';
@@ -301,8 +300,8 @@ export default function ErpExportModal({
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-snug">
                           {lang === 'id'
-                            ? `Konsumsi luar: Unit ${otherSiteLabel} & seluruh unit non-Master Equipment`
-                            : `Outside consumption: ${otherSiteLabel} fleet & non-Master Equipment units`}
+                            ? 'Unit non-Master Equipment'
+                            : 'Non-Master Equipment units'}
                         </div>
                       </div>
                     </div>
