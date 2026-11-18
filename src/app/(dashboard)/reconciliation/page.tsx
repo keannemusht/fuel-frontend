@@ -14,21 +14,21 @@ import {
   RefreshCw,
   Search,
   CheckCircle2,
-  SlidersHorizontal,
   ChevronDown,
   RotateCcw,
   Download,
-  Fuel,
-  ArrowRight,
-  Info,
   Calendar,
   Sparkles,
   Check,
   X,
-  FileSpreadsheet,
+  Activity,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { formatNumber } from '@/lib/utils';
 import ErpExportModal from '@/components/history/ErpExportModal';
+import ModalPortal from '@/components/shared/ModalPortal';
 import { toast } from 'react-toastify';
 
 const MONTH_NAMES_ID = [
@@ -103,11 +103,21 @@ interface AuditResponse {
   anomalies: AnomalyItem[];
 }
 
+function formatInt(num?: number): string {
+  if (num === undefined || num === null) return '0';
+  return num.toLocaleString('id-ID');
+}
+
+function formatFloat(num?: number): string {
+  if (num === undefined || num === null) return '0';
+  return num.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 export default function ReconciliationPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { t, lang } = useLanguage();
-  const { site } = useSite();
+  const { site, siteLabel } = useSite();
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
@@ -125,14 +135,23 @@ export default function ReconciliationPage() {
   const [isConfirmApplyOpen, setIsConfirmApplyOpen] = useState<boolean>(false);
   const [isConfirmRollbackOpen, setIsConfirmRollbackOpen] = useState<boolean>(false);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 25;
+
   const monthParam = `${selectedYear}-${selectedMonth}`;
   const siteParam = site === 'ALL' ? 'ALL' : site;
 
-  // Query Audit Diagnostics
-  const { data: auditData, isLoading, isFetching, refetch } = useQuery<AuditResponse>({
+  // Query Audit Diagnostics - NOTE: baseURL already has /api, so we use /reconciliation/health
+  const {
+    data: auditData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery<AuditResponse>({
     queryKey: ['reconciliationAudit', monthParam, siteParam],
     queryFn: async () => {
-      const res = await api.get(`/api/reconciliation/health?monthStr=${monthParam}&site=${siteParam}`);
+      const res = await api.get(`/reconciliation/health?monthStr=${monthParam}&site=${siteParam}`);
       return res.data?.data;
     },
     refetchOnWindowFocus: false,
@@ -141,7 +160,7 @@ export default function ReconciliationPage() {
   // Mutation: Apply Fixes
   const applyMutation = useMutation({
     mutationFn: async (fixes: any[]) => {
-      const res = await api.post('/api/reconciliation/apply', { fixes });
+      const res = await api.post('/reconciliation/apply', { fixes });
       return res.data;
     },
     onSuccess: (data) => {
@@ -160,7 +179,7 @@ export default function ReconciliationPage() {
   // Mutation: Rollback Fixes
   const rollbackMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post('/api/reconciliation/rollback', {});
+      const res = await api.post('/reconciliation/rollback', {});
       return res.data;
     },
     onSuccess: (data) => {
@@ -176,16 +195,15 @@ export default function ReconciliationPage() {
   });
 
   const monthOptions = lang === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ID;
+  const selectedMonthName = monthOptions.find((m) => m.value === selectedMonth)?.name || selectedMonth;
   const anomalies = auditData?.anomalies || [];
 
   // Filtered anomalies by category tab and search query
   const filteredAnomalies = useMemo(() => {
     return anomalies.filter((item) => {
-      // Category match
       if (activeCategoryTab !== 'ALL' && item.anomalyType !== activeCategoryTab) {
         return false;
       }
-      // Search match
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesUnit = item.unitCode.toLowerCase().includes(q);
@@ -197,15 +215,31 @@ export default function ReconciliationPage() {
     });
   }, [anomalies, activeCategoryTab, searchQuery]);
 
+  // Paginated items
+  const totalPages = Math.ceil(filteredAnomalies.length / itemsPerPage) || 1;
+  const paginatedAnomalies = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredAnomalies.slice(start, start + itemsPerPage);
+  }, [filteredAnomalies, currentPage, itemsPerPage]);
+
   // Selection handlers
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAllOnPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = new Set(selectedIds);
     if (e.target.checked) {
-      const allIds = new Set(filteredAnomalies.map((a) => a.id));
-      setSelectedIds(allIds);
+      paginatedAnomalies.forEach((a) => {
+        if (a.anomalyType !== 'NON_DISPENSE') next.add(a.id);
+      });
     } else {
-      setSelectedIds(new Set());
+      paginatedAnomalies.forEach((a) => next.delete(a.id));
     }
+    setSelectedIds(next);
   };
+
+  const isAllOnPageSelected =
+    paginatedAnomalies.length > 0 &&
+    paginatedAnomalies
+      .filter((a) => a.anomalyType !== 'NON_DISPENSE')
+      .every((a) => selectedIds.has(a.id));
 
   const handleToggleItem = (id: string) => {
     const next = new Set(selectedIds);
@@ -235,425 +269,489 @@ export default function ReconciliationPage() {
   };
 
   const healthScore = auditData?.healthScore ?? 100;
-  const healthBadgeColor =
-    healthScore >= 95
-      ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
-      : healthScore >= 80
-      ? 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
-      : 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800';
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-16">
-      {/* 1. Header & Controls */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-3">
-              <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
-                <CheckCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {lang === 'en' ? 'Data Integrity & ERP Reconciliation Engine' : 'Rekonsiliasi Integritas Data & Ekspor ERP'}
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {lang === 'en'
-                    ? 'Automated diagnostics, chronological meter validation, and one-click clean Syshab generation.'
-                    : 'Pemeriksaan integritas meter kronologis, perbaikan inkonsistensi, dan pembuatan ekspor Syshab bersih.'}
-                </p>
-              </div>
-            </div>
+    <div className="space-y-5 sm:space-y-6">
+      {/* 1. Header Bar matching /history & /dispenser */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
+            <CheckCheck className="w-5 h-5 text-slate-700 dark:text-white/70" />
+            <span>{lang === 'id' ? 'Rekonsiliasi Integritas Data' : 'Data Reconciliation'}</span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-[#888888] mt-0.5">
+            {lang === 'id'
+              ? 'Audit kronologis meter unit, perbaikan inkonsistensi, dan pembuatan ekspor Syshab ERP bersih'
+              : 'Audit and reconcile chronological meter readings for 100% Syshab ERP compliance'}
+          </p>
+        </div>
+
+        {/* Action Controls & Month Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Month & Year Dropdown Pill */}
+          <div className="flex items-center px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1]">
+            <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-500 dark:text-white/60 shrink-0" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-xs font-semibold text-slate-800 dark:text-white focus:outline-none cursor-pointer"
+            >
+              {monthOptions.map((m) => (
+                <option key={m.value} value={m.value} className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">
+                  {m.name}
+                </option>
+              ))}
+            </select>
+            <span className="mx-1 text-slate-300 dark:text-white/20">/</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-xs font-semibold text-slate-800 dark:text-white focus:outline-none cursor-pointer"
+            >
+              {AVAILABLE_YEARS.map((y) => (
+                <option key={y} value={y} className="bg-white dark:bg-[#121212] text-slate-900 dark:text-white">
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Month & Year Selectors */}
-            <div className="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-              <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 mr-1" />
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent text-slate-700 dark:text-slate-200 font-medium focus:outline-none cursor-pointer"
-              >
-                {monthOptions.map((m) => (
-                  <option key={m.value} value={m.value} className="dark:bg-slate-900">
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-              <span className="text-slate-400">/</span>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-transparent text-slate-700 dark:text-slate-200 font-medium focus:outline-none cursor-pointer"
-              >
-                {AVAILABLE_YEARS.map((y) => (
-                  <option key={y} value={y} className="dark:bg-slate-900">
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Action: Re-Scan Diagnostics */}
+          <button
+            onClick={() => refetch()}
+            disabled={isLoading || isFetching}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all disabled:opacity-50"
+            title="Pindai ulang integritas data untuk periode yang dipilih"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-white/70 ${isFetching ? 'animate-spin' : ''}`} />
+            <span>{isFetching ? 'Memindai...' : lang === 'id' ? 'Pindai Ulang' : 'Re-Scan'}</span>
+          </button>
 
-            {/* Re-Scan Button */}
-            <button
-              onClick={() => refetch()}
-              disabled={isLoading || isFetching}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-              <span>{lang === 'en' ? 'Re-Scan Data' : 'Pindai Ulang'}</span>
-            </button>
+          {/* Action: Rollback */}
+          <button
+            onClick={() => setIsConfirmRollbackOpen(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all"
+            title="Batalkan perubahan rekonsiliasi terakhir"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-600 dark:text-white/70" />
+            <span>Rollback</span>
+          </button>
 
-            {/* Rollback Button */}
-            <button
-              onClick={() => setIsConfirmRollbackOpen(true)}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{lang === 'en' ? 'Rollback Fixes' : 'Rollback Terakhir'}</span>
-            </button>
-
-            {/* Export Syshab Button */}
-            <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>{lang === 'en' ? 'Export Clean Syshab' : 'Unduh Syshab Bersih'}</span>
-            </button>
-          </div>
+          {/* Action: Export Clean Syshab */}
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-medium text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
+            title="Buka opsi ekspor Syshab dengan sanitasi kronologis otomatis"
+          >
+            <Download className="w-3.5 h-3.5 text-white shrink-0" />
+            <span>{lang === 'id' ? 'Ekspor Upload Syshab' : 'Export Upload Syshab'}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white border border-white/20">
+              .csv / .xlsx
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* 2. KPI / Health Score Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Health Score */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {lang === 'en' ? 'Data Health Score' : 'Skor Kesehatan Data'}
-            </span>
-            <div className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${healthBadgeColor}`}>
-              {healthScore >= 95 ? 'SEHAT' : healthScore >= 80 ? 'PERLU TINDAKAN' : 'KRITIS'}
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              {isLoading ? '...' : `${healthScore}%`}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {auditData ? `${formatNumber(auditData.validLogs)} / ${formatNumber(auditData.totalLogs)} log valid` : ''}
-            </span>
-          </div>
-          {/* Visual Progress bar */}
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+      {/* 2. Responsive KPI Cards (5 Columns matching /history) */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+        {/* Card 1: Data Health Score */}
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
+            {lang === 'id' ? 'Skor Integritas' : 'Health Score'}
+          </p>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
+            <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+              {isLoading ? '...' : `${formatFloat(healthScore)}%`}
+            </h3>
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                healthScore >= 95 ? 'bg-emerald-500' : healthScore >= 80 ? 'bg-amber-500' : 'bg-rose-500'
+              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center ${
+                healthScore >= 95
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+                  : healthScore >= 80
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
               }`}
-              style={{ width: `${Math.max(5, healthScore)}%` }}
-            />
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-        </div>
-
-        {/* Total Examined */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {lang === 'en' ? 'Total Transactions' : 'Total Transaksi Diperiksa'}
-          </span>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              {isLoading ? '...' : formatNumber(auditData?.totalLogs || 0)}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">records</span>
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-3">
-            Periode {selectedMonth}/{selectedYear} • Site {siteParam}
+          <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
+            {healthScore >= 95
+              ? (lang === 'id' ? 'Status: Optimal' : 'Status: Optimal')
+              : healthScore >= 80
+              ? (lang === 'id' ? 'Perlu Rekonsiliasi' : 'Reconcile Needed')
+              : (lang === 'id' ? 'Status: Kritis' : 'Status: Critical')}
           </p>
         </div>
 
-        {/* Valid Records */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {lang === 'en' ? 'Valid & Clean Records' : 'Transaksi Valid & Normal'}
-          </span>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
-              {isLoading ? '...' : formatNumber(auditData?.validLogs || 0)}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">records</span>
+        {/* Card 2: Total Transactions */}
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
+            {lang === 'id' ? 'Total Transaksi' : 'Total Transactions'}
+          </p>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
+            <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+              {isLoading ? '...' : formatInt(auditData?.totalLogs)}
+              <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
+                Logs
+              </span>
+            </h3>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-600 dark:text-white/70">
+              <Activity className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-3 flex items-center">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            Lolos validasi ERP tanpa modifikasi
+          <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
+            {selectedMonthName} {selectedYear}
           </p>
         </div>
 
-        {/* Anomalies Detected */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {lang === 'en' ? 'Detected Anomalies' : 'Total Anomali Ditemukan'}
-          </span>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-400">
-              {isLoading ? '...' : formatNumber(auditData?.anomalies?.length || 0)}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">kasus</span>
+        {/* Card 3: Valid ERP Records */}
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
+            {lang === 'id' ? 'Data Valid & Normal' : 'Valid Records'}
+          </p>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
+            <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+              {isLoading ? '...' : formatInt(auditData?.validLogs)}
+              <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
+                Logs
+              </span>
+            </h3>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-3 flex items-center">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Dapat diperbaiki sekali klik atau via auto-sanitize
+          <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
+            {lang === 'id' ? 'Siap upload ERP' : 'Ready for ERP'}
+          </p>
+        </div>
+
+        {/* Card 4: Total Anomalies */}
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
+            {lang === 'id' ? 'Total Anomali' : 'Total Anomalies'}
+          </p>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
+            <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400">
+              {isLoading ? '...' : formatInt(auditData?.anomalies?.length)}
+              <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
+                Kasus
+              </span>
+            </h3>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
+            {lang === 'id' ? 'Perlu penyesuaian' : 'Needs attention'}
+          </p>
+        </div>
+
+        {/* Card 5: Meter Backtracks / Typos */}
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
+            {lang === 'id' ? 'Meter Mundur / Typo' : 'Meter Decreases'}
+          </p>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
+            <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-rose-600 dark:text-rose-400">
+              {isLoading ? '...' : formatInt(auditData?.categories?.meterDecrease)}
+              <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
+                Kasus
+              </span>
+            </h3>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <RotateCcw className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
+            {lang === 'id' ? 'Akar penolakan Syshab' : 'ERP blocker root cause'}
           </p>
         </div>
       </div>
 
-      {/* 3. Filter Tabs & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              onClick={() => setActiveCategoryTab('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'ALL'
-                  ? 'bg-orange-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Semua Anomali ({auditData?.anomalies?.length || 0})
-            </button>
-            <button
-              onClick={() => setActiveCategoryTab('METER_DECREASE')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'METER_DECREASE'
-                  ? 'bg-rose-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Meter Mundur / Typo ({auditData?.categories?.meterDecrease || 0})
-            </button>
-            <button
-              onClick={() => setActiveCategoryTab('METER_ZERO')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'METER_ZERO'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Meter 0 / Genset ({auditData?.categories?.meterZero || 0})
-            </button>
-            <button
-              onClick={() => setActiveCategoryTab('METER_EQUAL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'METER_EQUAL'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Meter Sama / Standstill ({auditData?.categories?.meterEqual || 0})
-            </button>
-            <button
-              onClick={() => setActiveCategoryTab('METER_JUMP')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'METER_JUMP'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Lompatan Ekstrem ({auditData?.categories?.meterJump || 0})
-            </button>
-            <button
-              onClick={() => setActiveCategoryTab('NON_DISPENSE')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeCategoryTab === 'NON_DISPENSE'
-                  ? 'bg-slate-700 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              Non-Dispense ({auditData?.categories?.nonDispense || 0})
-            </button>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative min-w-[240px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* 3. Search & Segmented Filter Toolbar matching /history */}
+      <div className="space-y-2.5">
+        <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-20">
+          {/* Search Input matching /history */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666666]" />
             <input
               type="text"
-              placeholder={lang === 'en' ? 'Search unit, operator, description...' : 'Cari kode unit, operator, deskripsi...'}
+              placeholder={
+                lang === 'id'
+                  ? 'Cari kode unit, operator, deskripsi anomali...'
+                  : 'Search unit code, operator, anomaly description...'
+              }
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-full text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#666666] focus:outline-none focus:ring-1 focus:ring-orange-500"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Segmented Category Filter matching industrial design */}
+          <div className="flex flex-wrap items-center p-1 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-xs">
+            <button
+              onClick={() => {
+                setActiveCategoryTab('ALL');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeCategoryTab === 'ALL'
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Semua ({formatInt(auditData?.anomalies?.length)})
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategoryTab('METER_DECREASE');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeCategoryTab === 'METER_DECREASE'
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Meter Mundur ({formatInt(auditData?.categories?.meterDecrease)})
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategoryTab('METER_ZERO');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeCategoryTab === 'METER_ZERO'
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Meter 0 ({formatInt(auditData?.categories?.meterZero)})
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategoryTab('METER_EQUAL');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeCategoryTab === 'METER_EQUAL'
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Meter Sama ({formatInt(auditData?.categories?.meterEqual)})
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategoryTab('NON_DISPENSE');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeCategoryTab === 'NON_DISPENSE'
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Non-Dispense ({formatInt(auditData?.categories?.nonDispense)})
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* 4. Interactive Review Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              {lang === 'en' ? 'Anomaly Diagnostic & Smart Fix Matrix' : 'Matriks Diagnostik Anomali & Rekomendasi Koreksi'}
-            </h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {filteredAnomalies.length} anomali ditampilkan
-            </span>
-          </div>
-
-          {/* Selection indicator & Quick action */}
-          {selectedIds.size > 0 && (
-            <div className="flex items-center space-x-3">
-              <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold">
-                {selectedIds.size} baris dipilih
+        {/* Floating/Docked Selection Banner */}
+        {selectedIds.size > 0 && (
+          <div className="p-3 sm:p-4 rounded-2xl border border-orange-200 dark:border-orange-900/40 bg-orange-50/80 dark:bg-orange-950/20 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="flex items-center space-x-2 text-xs text-orange-900 dark:text-orange-200">
+              <span className="font-bold text-orange-700 dark:text-orange-400 font-mono">
+                {selectedIds.size}
               </span>
+              <span>transaksi dipilih untuk perbaikan database</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 transition"
+              >
+                Batal
+              </button>
               <button
                 onClick={handleApplySelected}
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Terapkan Koreksi ({selectedIds.size})</span>
+                <span>Terapkan Perbaikan ({selectedIds.size})</span>
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
+      {/* 4. Industrial Table View matching /history */}
+      <div className="rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 dark:bg-slate-800/50 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+              <tr className="border-b border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-[10px] font-bold text-slate-400 dark:text-[#777] uppercase tracking-wider">
                 <th className="py-3 px-4 w-10 text-center">
                   <input
                     type="checkbox"
-                    checked={filteredAnomalies.length > 0 && selectedIds.size === filteredAnomalies.length}
-                    onChange={handleSelectAll}
-                    className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                    checked={isAllOnPageSelected}
+                    onChange={handleSelectAllOnPage}
+                    className="w-3.5 h-3.5 rounded border-slate-300 dark:border-white/20 text-orange-600 focus:ring-0 cursor-pointer"
                   />
                 </th>
-                <th className="py-3 px-4">Unit & Tipe</th>
-                <th className="py-3 px-4">Waktu & Shift</th>
-                <th className="py-3 px-4">Petugas / Opr</th>
-                <th className="py-3 px-4">Nilai Saat Ini (DB)</th>
-                <th className="py-3 px-4">Usulan Koreksi Rekonsiliasi</th>
-                <th className="py-3 px-4">Diagnosis & Strategi</th>
-                <th className="py-3 px-4 text-center">Keyakinan</th>
+                <th className="py-3 px-4">No Unit</th>
+                <th className="py-3 px-4">Kategori & Tipe</th>
+                <th className="py-3 px-4">Tanggal & Waktu</th>
+                <th className="py-3 px-4">Operator & Shift</th>
+                <th className="py-3 px-4">Meter Saat Ini (DB)</th>
+                <th className="py-3 px-4">Usulan Rekonsiliasi</th>
+                <th className="py-3 px-4">Diagnosis Anomali</th>
+                <th className="py-3 px-4 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs text-slate-700 dark:text-slate-300">
+            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] text-xs">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-orange-500" />
-                    Memindai data riwayat & menjalankan analisis integritas...
+                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-[#666]">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
+                    Memeriksa integritas data historis...
                   </td>
                 </tr>
-              ) : filteredAnomalies.length === 0 ? (
+              ) : paginatedAnomalies.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                    <p className="font-semibold text-slate-700 dark:text-slate-200">
-                      Tidak ditemukan anomali pada filter ini!
+                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-[#666]">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                    <p className="font-semibold text-slate-700 dark:text-slate-300">
+                      Tidak ada anomali pada filter ini
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Seluruh data transaksi konsisten dan siap untuk diekspor ke Syshab ERP.
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Seluruh transaksi konsisten dan memenuhi kriteria validasi Syshab ERP.
                     </p>
                   </td>
                 </tr>
               ) : (
-                filteredAnomalies.map((item) => {
+                paginatedAnomalies.map((item) => {
                   const isChecked = selectedIds.has(item.id);
                   const isNonDispense = item.anomalyType === 'NON_DISPENSE';
 
                   return (
                     <tr
                       key={item.id}
-                      className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition ${
-                        isChecked ? 'bg-orange-50/40 dark:bg-orange-950/20' : ''
+                      className={`h-11 sm:h-12 hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition ${
+                        isChecked ? 'bg-orange-50/30 dark:bg-orange-950/20' : ''
                       }`}
                     >
-                      <td className="py-3 px-4 text-center">
+                      {/* Checkbox */}
+                      <td className="py-2.5 px-4 text-center">
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleToggleItem(item.id)}
                           disabled={isNonDispense}
-                          className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer disabled:opacity-30"
+                          className="w-3.5 h-3.5 rounded border-slate-300 dark:border-white/20 text-orange-600 focus:ring-0 cursor-pointer disabled:opacity-20"
                         />
                       </td>
 
-                      {/* Unit & Type */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                          <span>{item.unitCode}</span>
+                      {/* No Unit */}
+                      <td className="py-2.5 px-4 whitespace-nowrap">
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">
+                          {item.unitCode}
+                        </span>
+                      </td>
+
+                      {/* Category & Type */}
+                      <td className="py-2.5 px-4 whitespace-nowrap">
+                        <div className="text-slate-700 dark:text-slate-300 font-medium">
+                          {item.category || '-'}
                         </div>
-                        <span className="text-[10px] text-slate-400">{item.type || item.category}</span>
-                      </td>
-
-                      {/* Date & Shift */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">{item.dateStr}</div>
-                        <div className="text-[10px] text-slate-400">
-                          {item.jamStr} • {item.shift}
+                        <div className="text-[10px] text-slate-400 dark:text-[#777]">
+                          {item.type || '-'}
                         </div>
                       </td>
 
-                      {/* Operator */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">{item.operator}</div>
-                        <div className="text-[10px] text-slate-400">{formatNumber(item.volumeLiters)} L</div>
+                      {/* Date & Time */}
+                      <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px]">
+                        <div className="text-slate-800 dark:text-slate-200">{item.dateStr}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#777]">{item.jamStr} WITA</div>
                       </td>
 
-                      {/* Current Values */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px]">
+                      {/* Operator & Shift */}
+                      <td className="py-2.5 px-4 whitespace-nowrap">
+                        <div className="text-slate-800 dark:text-slate-200 font-medium">{item.operator}</div>
+                        <div className="flex items-center space-x-1.5 mt-0.5">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400">
+                            {item.shift}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {formatInt(item.volumeLiters)} L
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Current Meter (DB) */}
+                      <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px]">
                         <div className="text-slate-500">
-                          Prev: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatNumber(item.previousMeter)}</span>
+                          Prev: {formatFloat(item.previousMeter)}
                         </div>
                         <div className="text-rose-600 dark:text-rose-400 font-bold">
-                          Curr: {formatNumber(item.currentMeter)} ({item.meterType})
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          Δ: {formatNumber(item.deltaMeter)}
+                          Curr: {formatFloat(item.currentMeter)}{' '}
+                          <span className="text-[10px] text-slate-400 font-sans">({item.meterType})</span>
                         </div>
                       </td>
 
-                      {/* Proposed Reconciled Values */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px]">
+                      {/* Proposed Reconciled Meter */}
+                      <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px]">
                         {isNonDispense ? (
-                          <span className="text-slate-400 italic">Eksklusi Otomatis</span>
+                          <span className="text-slate-400 italic text-[11px]">Eksklusi otomatis</span>
                         ) : (
-                          <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
-                            <div className="text-emerald-700 dark:text-emerald-400">
-                              Prev: <span className="font-bold">{formatNumber(item.proposedPrevious)}</span>
+                          <div className="inline-block px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                            <div className="text-emerald-700 dark:text-emerald-400 text-[10px]">
+                              Prev: {formatFloat(item.proposedPrevious)}
                             </div>
                             <div className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center">
-                              Curr: {formatNumber(item.proposedCurrent)} ({item.meterType})
-                              <ArrowRight className="w-3 h-3 ml-1 text-emerald-500 inline" />
-                            </div>
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                              Δ: +{formatNumber(item.proposedCurrent - item.proposedPrevious)}
+                              Curr: {formatFloat(item.proposedCurrent)}{' '}
+                              <span className="text-[9px] text-emerald-600 ml-0.5">({item.meterType})</span>
+                              <ArrowRight className="w-2.5 h-2.5 ml-1 text-emerald-500 inline" />
                             </div>
                           </div>
                         )}
                       </td>
 
                       {/* Diagnostic & Strategy */}
-                      <td className="py-3 px-4 max-w-xs">
-                        <div className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                      <td className="py-2.5 px-4 max-w-xs">
+                        <div className="text-[11px] font-medium text-slate-800 dark:text-slate-200">
                           {item.description}
                         </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          💡 {item.fixStrategy}
+                        <div className="text-[10px] text-slate-400 dark:text-[#777] mt-0.5">
+                          {item.fixStrategy}
                         </div>
                       </td>
 
-                      {/* Confidence */}
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                      {/* Confidence status */}
+                      <td className="py-2.5 px-4 text-center whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             item.confidence === 'HIGH'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                              : item.confidence === 'MEDIUM'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                              : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                           }`}
                         >
                           {item.confidence}
@@ -666,112 +764,148 @@ export default function ReconciliationPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination matching /history */}
+        <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between text-xs text-slate-500 dark:text-[#888888]">
+          <span>
+            Menampilkan{' '}
+            <span className="font-semibold text-slate-800 dark:text-white">
+              {filteredAnomalies.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
+            </span>{' '}
+            hingga{' '}
+            <span className="font-semibold text-slate-800 dark:text-white">
+              {Math.min(currentPage * itemsPerPage, filteredAnomalies.length)}
+            </span>{' '}
+            dari{' '}
+            <span className="font-semibold text-slate-800 dark:text-white">
+              {filteredAnomalies.length}
+            </span>{' '}
+            anomali
+          </span>
+
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 font-mono">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* 5. Confirmation Modal: Apply Fixes */}
+      {/* 5. Clean Modal Portal: Confirmation Apply */}
       {isConfirmApplyOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center space-x-3 text-orange-600 dark:text-orange-400">
-              <div className="p-2.5 rounded-xl bg-orange-100 dark:bg-orange-950/60">
-                <ShieldCheck className="w-6 h-6" />
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/[0.1] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center space-x-3 text-slate-900 dark:text-white">
+                <div className="w-9 h-9 rounded-full bg-orange-100 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">Konfirmasi Rekonsiliasi Database</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-[#888888]">
+                    Perubahan akan disimpan permanen dengan riwayat jejak audit
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Konfirmasi Penerapan Rekonsiliasi
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Perubahan akan disimpan ke database dengan audit trail lengkap.
-                </p>
-              </div>
-            </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 text-xs space-y-2 text-slate-700 dark:text-slate-300">
-              <div className="flex justify-between">
-                <span>Total data yang akan diperbaiki:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{selectedIds.size} transaksi</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] text-xs space-y-1.5 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Total data diperbaiki:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{selectedIds.size} transaksi</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Bulan / Periode:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{selectedMonthName} {selectedYear}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Keamanan:</span>
+                  <span className="text-emerald-600 font-bold font-sans">Dapat di-rollback kapan saja</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Periode:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{selectedMonth}/{selectedYear}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Keamanan Data:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">Tersedia fitur Rollback</span>
-              </div>
-              <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-700">
-                Sistem akan memperbarui nilai HM/KM mundur dan menandai status validasi bypass agar diterima oleh Syshab ERP secara permanen.
-              </p>
-            </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-2">
-              <button
-                onClick={() => setIsConfirmApplyOpen(false)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition"
-              >
-                Batal
-              </button>
-              <button
-                onClick={executeApply}
-                disabled={applyMutation.isPending}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
-              >
-                {applyMutation.isPending ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Check className="w-3.5 h-3.5" />
-                )}
-                <span>{applyMutation.isPending ? 'Menerapkan...' : 'Ya, Terapkan Sekarang'}</span>
-              </button>
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  onClick={() => setIsConfirmApplyOpen(false)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={executeApply}
+                  disabled={applyMutation.isPending}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 disabled:opacity-50"
+                >
+                  {applyMutation.isPending ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>{applyMutation.isPending ? 'Menerapkan...' : 'Terapkan Sekarang'}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
-      {/* 6. Confirmation Modal: Rollback */}
+      {/* 6. Clean Modal Portal: Confirmation Rollback */}
       {isConfirmRollbackOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center space-x-3 text-amber-600 dark:text-amber-400">
-              <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/60">
-                <RotateCcw className="w-6 h-6" />
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/[0.1] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center space-x-3 text-slate-900 dark:text-white">
+                <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">Rollback Perbaikan Rekonsiliasi</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-[#888888]">
+                    Kembalikan nilai meter ke kondisi sebelum perbaikan
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Rollback Perbaikan Rekonsiliasi
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Mengembalikan data yang sebelumnya diubah ke nilai aslinya.
-                </p>
+
+              <p className="text-xs text-slate-600 dark:text-[#aaa] leading-relaxed">
+                Apakah Anda yakin ingin membatalkan perbaikan rekonsiliasi terakhir? Nilai meter pada log transaksi akan dipulihkan persis seperti data aslinya.
+              </p>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  onClick={() => setIsConfirmRollbackOpen(false)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => rollbackMutation.mutate()}
+                  disabled={rollbackMutation.isPending}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 disabled:opacity-50"
+                >
+                  {rollbackMutation.isPending ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  )}
+                  <span>{rollbackMutation.isPending ? 'Me-rollback...' : 'Ya, Rollback'}</span>
+                </button>
               </div>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60">
-              Apakah Anda yakin ingin membatalkan perbaikan rekonsiliasi terakhir? Nilai meter akan dikembalikan persis seperti sebelum eksekusi perbaikan.
-            </p>
-
-            <div className="flex items-center justify-end space-x-3 pt-2">
-              <button
-                onClick={() => setIsConfirmRollbackOpen(false)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => rollbackMutation.mutate()}
-                disabled={rollbackMutation.isPending}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
-              >
-                {rollbackMutation.isPending ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <RotateCcw className="w-3.5 h-3.5" />
-                )}
-                <span>{rollbackMutation.isPending ? 'Me-rollback...' : 'Ya, Rollback Nilai Asli'}</span>
-              </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* 7. Syshab Clean Export Modal */}
@@ -782,7 +916,7 @@ export default function ReconciliationPage() {
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
           selectedSite={siteParam}
-          siteLabel={siteParam === 'ALL' ? 'Semua Site' : `Site ${siteParam}`}
+          siteLabel={siteLabel}
         />
       )}
     </div>
