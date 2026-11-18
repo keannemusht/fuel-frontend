@@ -519,41 +519,21 @@ export default function HistoryPage() {
                     </span>
                   </button>
 
-                  {/* Option 3: Export ERP Excel */}
+                  {/* Option 3: Export Upload Syshab */}
                   <button
                     type="button"
                     onClick={() => {
                       setShowDataMenu(false);
-                      setErpExportFormat('xlsx');
                       setShowErpExportModal(true);
                     }}
                     className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
                     <span className="font-medium flex-1 truncate">
-                      {lang === 'id' ? 'Export Format ERP (Excel)' : 'Export ERP Format (Excel)'}
+                      {lang === 'id' ? 'Export Upload Syshab' : 'Export Upload Syshab'}
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.08]">
-                      .xlsx
-                    </span>
-                  </button>
-
-                  {/* Option 4: Export ERP CSV */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDataMenu(false);
-                      setErpExportFormat('csv');
-                      setShowErpExportModal(true);
-                    }}
-                    className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition text-left group cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-white shrink-0 transition-colors" />
-                    <span className="font-medium flex-1 truncate">
-                      {lang === 'id' ? 'Export Format ERP (CSV)' : 'Export ERP Format (CSV)'}
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.08]">
-                      .csv
+                      .csv / .xlsx
                     </span>
                   </button>
 
