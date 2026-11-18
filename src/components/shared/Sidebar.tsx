@@ -16,6 +16,7 @@ import {
   CalendarClock,
   CalendarPlus,
   LayoutDashboard,
+  CheckCheck,
 } from 'lucide-react';
 import { useAuth } from '../providers/AuthProvider';
 import { useLanguage } from '../providers/LanguageProvider';
@@ -68,6 +69,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       name: t('nav.backdate', 'Backdate Input'),
       href: '/backdate',
       icon: CalendarPlus,
+      allowedRoles: ['ADMIN', 'MANAGEMENT'],
+    },
+    {
+      name: t('nav.reconciliation', 'Data Reconciliation'),
+      href: '/reconciliation',
+      icon: CheckCheck,
       allowedRoles: ['ADMIN', 'MANAGEMENT'],
     },
     {
