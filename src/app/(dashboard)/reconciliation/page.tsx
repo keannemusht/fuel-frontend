@@ -103,14 +103,40 @@ interface AuditResponse {
   anomalies: AnomalyItem[];
 }
 
-function formatInt(num?: number): string {
+function formatInt(num?: number, lang: string = 'id'): string {
   if (num === undefined || num === null) return '0';
-  return num.toLocaleString('id-ID');
+  return num.toLocaleString(lang === 'en' ? 'en-US' : 'id-ID');
 }
 
-function formatFloat(num?: number): string {
+function formatFloat(num?: number, lang: string = 'id'): string {
   if (num === undefined || num === null) return '0';
-  return num.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return num.toLocaleString(lang === 'en' ? 'en-US' : 'id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function localizeDescription(desc: string, lang: string): string {
+  if (lang !== 'en') return desc;
+  return desc
+    .replace(/Volume dispense (.*) L <= 0 \(Baris Saldo Awal \/ Inbound Refill\)/, 'Dispense volume $1 L <= 0 (Opening Balance / Inbound Refill line)')
+    .replace(/Transaksi tercatat ganda pada waktu persis (.*)/, 'Duplicate transaction recorded at exact timestamp $1')
+    .replace(/Meter kosong di antara (.*) dan (.*) -> Usulan interpolasi: (.*)/, 'Blank meter between $1 and $2 -> Proposed interpolation: $3')
+    .replace(/Peralatan tanpa meter fisik \(Genset \/ Tower Lamp\)/, 'Equipment without physical meter (Genset / Tower Lamp)')
+    .replace(/Lonjakan typo terisolasi \((.*)\) di antara (.*) dan (.*)/, 'Isolated typo spike ($1) between $2 and $3')
+    .replace(/Penurunan typo terisolasi \((.*)\) di antara (.*) dan (.*)/, 'Isolated typo decrease ($1) between $2 and $3')
+    .replace(/Meter sama persis \((.*)\) \/ unit standby \(selisih 0 jam\/km\)/, 'Identical meter reading ($1) / standby unit (0 hr/km delta)')
+    .replace(/Meter turun dari (.*) ke (.*)/, 'Meter decreased from $1 to $2');
+}
+
+function localizeStrategy(strat: string, lang: string): string {
+  if (lang !== 'en') return strat;
+  return strat
+    .replace(/Keluarkan baris dari modul pemakaian kendaraan ERP/, 'Exclude row from ERP vehicle consumption module')
+    .replace(/Verifikasi fisik nota fuelman untuk memastikan keabsahan transaksi ganda/, 'Physically verify fuelman slip to confirm duplicate transaction validity')
+    .replace(/Isi estimasi wajar agar tidak bolong dan menjaga batas last meter unit/, 'Fill reasonable estimate to prevent gaps and protect unit last meter threshold')
+    .replace(/Pertahankan 0 di DB fisik; sanitasi virtual \(Broken=2\) diterapkan otomatis saat ekspor Syshab/, 'Retain 0 in physical DB; virtual sanitation (Broken=2) is automatically applied during Syshab export')
+    .replace(/Koreksi typo digit lonjakan ke nilai riil armada \((.*)\) agar batas last meter tidak melonjak/, "Correct digit spike typo to fleet's real reading ($1) to prevent inflating unit's last meter")
+    .replace(/Koreksi typo penurunan ke nilai riil armada \((.*)\) sesuai lintasan fisik unit/, "Correct decrease typo to fleet's real reading ($1) along vehicle physical trajectory")
+    .replace(/Pertahankan nilai fisik di DB; saat ekspor Syshab otomatis disesuaikan secara virtual/, 'Retain physical value in DB; automatically adjusted virtually during Syshab export')
+    .replace(/Verifikasi fisik catatan penggantian meter mesin\/alat di lapangan/, 'Physically verify replacement record of dashboard meter/gauge on site');
 }
 
 export default function ReconciliationPage() {
@@ -149,9 +175,9 @@ export default function ReconciliationPage() {
     isFetching,
     refetch,
   } = useQuery<AuditResponse>({
-    queryKey: ['reconciliationAudit', monthParam, siteParam],
+    queryKey: ['reconciliationAudit', monthParam, siteParam, lang],
     queryFn: async () => {
-      const res = await api.get(`/reconciliation/health?monthStr=${monthParam}&site=${siteParam}`);
+      const res = await api.get(`/reconciliation/health?monthStr=${monthParam}&site=${siteParam}&lang=${lang}`);
       return res.data?.data;
     },
     refetchOnWindowFocus: false,
@@ -164,7 +190,7 @@ export default function ReconciliationPage() {
       return res.data;
     },
     onSuccess: (data) => {
-      toast.success(data?.message || 'Data rekonsiliasi berhasil diterapkan ke database.');
+      toast.success(data?.message || t('reconciliation.toastApplySuccess', 'Data rekonsiliasi berhasil diterapkan ke database.'));
       setSelectedIds(new Set());
       setIsConfirmApplyOpen(false);
       refetch();
@@ -172,7 +198,7 @@ export default function ReconciliationPage() {
       queryClient.invalidateQueries({ queryKey: ['monthlySummary'] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Gagal menerapkan perbaikan rekonsiliasi.');
+      toast.error(err.response?.data?.message || t('reconciliation.toastApplyFailed', 'Gagal menerapkan perbaikan rekonsiliasi.'));
     },
   });
 
@@ -183,14 +209,14 @@ export default function ReconciliationPage() {
       return res.data;
     },
     onSuccess: (data) => {
-      toast.success(data?.message || 'Berhasil me-rollback data ke nilai sebelumnya.');
+      toast.success(data?.message || t('reconciliation.toastRollbackSuccess', 'Berhasil me-rollback data ke nilai sebelumnya.'));
       setIsConfirmRollbackOpen(false);
       refetch();
       queryClient.invalidateQueries({ queryKey: ['fuelLogs'] });
       queryClient.invalidateQueries({ queryKey: ['monthlySummary'] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Gagal me-rollback rekonsiliasi.');
+      toast.error(err.response?.data?.message || t('reconciliation.toastRollbackFailed', 'Gagal me-rollback rekonsiliasi.'));
     },
   });
 
@@ -277,12 +303,10 @@ export default function ReconciliationPage() {
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
             <CheckCheck className="w-5 h-5 text-slate-700 dark:text-white/70" />
-            <span>{lang === 'id' ? 'Rekonsiliasi Integritas Data' : 'Data Reconciliation'}</span>
+            <span>{t('reconciliation.title', 'Rekonsiliasi Integritas Data')}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-[#888888] mt-0.5">
-            {lang === 'id'
-              ? 'Audit kronologis meter unit, perbaikan inkonsistensi, dan pembuatan ekspor Syshab ERP bersih'
-              : 'Audit and reconcile chronological meter readings for 100% Syshab ERP compliance'}
+            {t('reconciliation.subtitle', 'Audit kronologis meter unit, perbaikan inkonsistensi, dan pembuatan ekspor Syshab ERP bersih')}
           </p>
         </div>
 
@@ -327,30 +351,30 @@ export default function ReconciliationPage() {
             onClick={() => refetch()}
             disabled={isLoading || isFetching}
             className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all disabled:opacity-50"
-            title="Pindai ulang integritas data untuk periode yang dipilih"
+            title={lang === 'id' ? 'Pindai ulang integritas data untuk periode yang dipilih' : 'Re-scan data integrity for selected period'}
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-white/70 ${isFetching ? 'animate-spin' : ''}`} />
-            <span>{isFetching ? 'Memindai...' : lang === 'id' ? 'Pindai Ulang' : 'Re-Scan'}</span>
+            <span>{isFetching ? t('reconciliation.scanning', 'Memindai...') : t('reconciliation.rescan', 'Pindai Ulang')}</span>
           </button>
 
           {/* Action: Rollback */}
           <button
             onClick={() => setIsConfirmRollbackOpen(true)}
             className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all"
-            title="Batalkan perubahan rekonsiliasi terakhir"
+            title={lang === 'id' ? 'Batalkan perubahan rekonsiliasi terakhir' : 'Rollback last reconciliation changes'}
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-600 dark:text-white/70" />
-            <span>Rollback</span>
+            <span>{t('reconciliation.rollback', 'Rollback')}</span>
           </button>
 
           {/* Action: Export Clean Syshab */}
           <button
             onClick={() => setIsExportModalOpen(true)}
             className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-medium text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
-            title="Buka opsi ekspor Syshab dengan sanitasi kronologis otomatis"
+            title={lang === 'id' ? 'Buka opsi ekspor Syshab dengan sanitasi kronologis otomatis' : 'Open Syshab export options with automatic chronological sanitization'}
           >
             <Download className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>{lang === 'id' ? 'Ekspor Upload Syshab' : 'Export Upload Syshab'}</span>
+            <span>{t('reconciliation.exportSyshab', 'Ekspor Upload Syshab')}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white border border-white/20">
               .csv / .xlsx
             </span>
@@ -363,11 +387,11 @@ export default function ReconciliationPage() {
         {/* Card 1: Data Health Score */}
         <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
-            {lang === 'id' ? 'Skor Integritas' : 'Health Score'}
+            {t('reconciliation.healthScore', 'Skor Integritas')}
           </p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
-              {isLoading ? '...' : `${formatFloat(healthScore)}%`}
+              {isLoading ? '...' : `${formatFloat(healthScore, lang)}%`}
             </h3>
             <div
               className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center ${
@@ -383,23 +407,23 @@ export default function ReconciliationPage() {
           </div>
           <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
             {healthScore >= 95
-              ? (lang === 'id' ? 'Status: Optimal' : 'Status: Optimal')
+              ? t('reconciliation.statusOptimal', 'Status: Optimal')
               : healthScore >= 80
-              ? (lang === 'id' ? 'Perlu Rekonsiliasi' : 'Reconcile Needed')
-              : (lang === 'id' ? 'Status: Kritis' : 'Status: Critical')}
+              ? t('reconciliation.statusNeedsAttention', 'Perlu Rekonsiliasi')
+              : t('reconciliation.statusCritical', 'Status: Kritis')}
           </p>
         </div>
 
         {/* Card 2: Total Transactions */}
         <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
-            {lang === 'id' ? 'Total Transaksi' : 'Total Transactions'}
+            {t('reconciliation.totalTx', 'Total Transaksi')}
           </p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
-              {isLoading ? '...' : formatInt(auditData?.totalLogs)}
+              {isLoading ? '...' : formatInt(auditData?.totalLogs, lang)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
-                Logs
+                {t('reconciliation.logs', 'Logs')}
               </span>
             </h3>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-600 dark:text-white/70">
@@ -414,13 +438,13 @@ export default function ReconciliationPage() {
         {/* Card 3: Valid ERP Records */}
         <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
-            {lang === 'id' ? 'Data Valid & Normal' : 'Valid Records'}
+            {t('reconciliation.validRecords', 'Data Valid & Normal')}
           </p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-              {isLoading ? '...' : formatInt(auditData?.validLogs)}
+              {isLoading ? '...' : formatInt(auditData?.validLogs, lang)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
-                Logs
+                {t('reconciliation.logs', 'Logs')}
               </span>
             </h3>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -428,20 +452,20 @@ export default function ReconciliationPage() {
             </div>
           </div>
           <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
-            {lang === 'id' ? 'Siap upload ERP' : 'Ready for ERP'}
+            {t('reconciliation.readyForErp', 'Siap upload ERP')}
           </p>
         </div>
 
         {/* Card 4: Total Anomalies */}
         <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
-            {lang === 'id' ? 'Total Anomali' : 'Total Anomalies'}
+            {t('reconciliation.totalAnomalies', 'Total Anomali')}
           </p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400">
-              {isLoading ? '...' : formatInt(auditData?.anomalies?.length)}
+              {isLoading ? '...' : formatInt(auditData?.anomalies?.length, lang)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
-                Kasus
+                {t('reconciliation.cases', 'Kasus')}
               </span>
             </h3>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -449,20 +473,20 @@ export default function ReconciliationPage() {
             </div>
           </div>
           <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
-            {lang === 'id' ? 'Perlu penyesuaian' : 'Needs attention'}
+            {t('reconciliation.needsAdjustment', 'Perlu penyesuaian')}
           </p>
         </div>
 
         {/* Card 5: Meter Backtracks / Typos */}
         <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">
-            {lang === 'id' ? 'Meter Mundur / Typo' : 'Meter Decreases'}
+            {t('reconciliation.meterDecreases', 'Meter Mundur / Typo')}
           </p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-rose-600 dark:text-rose-400">
-              {isLoading ? '...' : formatInt(auditData?.categories?.meterDecrease)}
+              {isLoading ? '...' : formatInt(auditData?.categories?.meterDecrease, lang)}
               <span className="text-[10px] sm:text-xs font-normal text-slate-400 dark:text-[#888888] ml-1 font-sans">
-                Kasus
+                {t('reconciliation.cases', 'Kasus')}
               </span>
             </h3>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
@@ -470,7 +494,7 @@ export default function ReconciliationPage() {
             </div>
           </div>
           <p className="text-[10px] font-mono text-slate-400 dark:text-[#888888] mt-1 truncate">
-            {lang === 'id' ? 'Akar penolakan Syshab' : 'ERP blocker root cause'}
+            {t('reconciliation.erpBlockerRoot', 'Akar penolakan Syshab')}
           </p>
         </div>
       </div>
@@ -483,11 +507,7 @@ export default function ReconciliationPage() {
             <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666666]" />
             <input
               type="text"
-              placeholder={
-                lang === 'id'
-                  ? 'Cari kode unit, operator, deskripsi anomali...'
-                  : 'Search unit code, operator, anomaly description...'
-              }
+              placeholder={t('reconciliation.searchPlaceholder', 'Cari kode unit, operator, deskripsi anomali...')}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -518,7 +538,7 @@ export default function ReconciliationPage() {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Semua ({formatInt(auditData?.anomalies?.length)})
+              {t('reconciliation.tabAll', 'Semua')} ({formatInt(auditData?.anomalies?.length, lang)})
             </button>
             <button
               onClick={() => {
@@ -531,7 +551,7 @@ export default function ReconciliationPage() {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Meter Mundur ({formatInt(auditData?.categories?.meterDecrease)})
+              {t('reconciliation.tabMeterDecrease', 'Meter Mundur')} ({formatInt(auditData?.categories?.meterDecrease, lang)})
             </button>
             <button
               onClick={() => {
@@ -544,7 +564,7 @@ export default function ReconciliationPage() {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Meter 0 ({formatInt(auditData?.categories?.meterZero)})
+              {t('reconciliation.tabMeterZero', 'Meter 0')} ({formatInt(auditData?.categories?.meterZero, lang)})
             </button>
             <button
               onClick={() => {
@@ -557,7 +577,7 @@ export default function ReconciliationPage() {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Meter Sama ({formatInt(auditData?.categories?.meterEqual)})
+              {t('reconciliation.tabMeterEqual', 'Meter Sama')} ({formatInt(auditData?.categories?.meterEqual, lang)})
             </button>
             <button
               onClick={() => {
@@ -570,7 +590,7 @@ export default function ReconciliationPage() {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Non-Dispense ({formatInt(auditData?.categories?.nonDispense)})
+              {t('reconciliation.tabNonDispense', 'Non-Dispense')} ({formatInt(auditData?.categories?.nonDispense, lang)})
             </button>
           </div>
         </div>
@@ -582,21 +602,21 @@ export default function ReconciliationPage() {
               <span className="font-bold text-orange-700 dark:text-orange-400 font-mono">
                 {selectedIds.size}
               </span>
-              <span>transaksi dipilih untuk perbaikan database</span>
+              <span>{t('reconciliation.selectedBanner', 'transaksi dipilih untuk perbaikan database')}</span>
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setSelectedIds(new Set())}
                 className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 transition"
               >
-                Batal
+                {t('reconciliation.cancel', 'Batal')}
               </button>
               <button
                 onClick={handleApplySelected}
                 className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Terapkan Perbaikan ({selectedIds.size})</span>
+                <span>{t('reconciliation.applyFixes', 'Terapkan Perbaikan')} ({selectedIds.size})</span>
               </button>
             </div>
           </div>
@@ -617,14 +637,14 @@ export default function ReconciliationPage() {
                     className="w-3.5 h-3.5 rounded border-slate-300 dark:border-white/20 text-orange-600 focus:ring-0 cursor-pointer"
                   />
                 </th>
-                <th className="py-3 px-4">No Unit</th>
-                <th className="py-3 px-4">Kategori & Tipe</th>
-                <th className="py-3 px-4">Tanggal & Waktu</th>
-                <th className="py-3 px-4">Operator & Shift</th>
-                <th className="py-3 px-4">Meter Saat Ini (DB)</th>
-                <th className="py-3 px-4">Usulan Rekonsiliasi</th>
-                <th className="py-3 px-4">Diagnosis Anomali</th>
-                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4">{t('reconciliation.colUnit', 'No Unit')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colCategoryType', 'Kategori & Tipe')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colDateTime', 'Tanggal & Waktu')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colOperatorShift', 'Operator & Shift')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colCurrentMeter', 'Meter Saat Ini (DB)')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colProposedMeter', 'Usulan Rekonsiliasi')}</th>
+                <th className="py-3 px-4">{t('reconciliation.colDiagnosis', 'Diagnosis Anomali')}</th>
+                <th className="py-3 px-4 text-center">{t('reconciliation.colStatus', 'Status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] text-xs">
@@ -632,7 +652,7 @@ export default function ReconciliationPage() {
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-[#666]">
                     <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
-                    Memeriksa integritas data historis...
+                    {t('reconciliation.checking', 'Memeriksa integritas data historis...')}
                   </td>
                 </tr>
               ) : paginatedAnomalies.length === 0 ? (
@@ -640,10 +660,10 @@ export default function ReconciliationPage() {
                   <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-[#666]">
                     <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
                     <p className="font-semibold text-slate-700 dark:text-slate-300">
-                      Tidak ada anomali pada filter ini
+                      {t('reconciliation.noAnomalies', 'Tidak ada anomali pada filter ini')}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Seluruh transaksi konsisten dan memenuhi kriteria validasi Syshab ERP.
+                      {t('reconciliation.noAnomaliesDesc', 'Seluruh transaksi konsisten dan memenuhi kriteria validasi Syshab ERP.')}
                     </p>
                   </td>
                 </tr>
@@ -701,7 +721,7 @@ export default function ReconciliationPage() {
                             {item.shift}
                           </span>
                           <span className="text-[10px] font-mono text-slate-400">
-                            {formatInt(item.volumeLiters)} L
+                            {formatInt(item.volumeLiters, lang)} L
                           </span>
                         </div>
                       </td>
@@ -709,10 +729,10 @@ export default function ReconciliationPage() {
                       {/* Current Meter (DB) */}
                       <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px]">
                         <div className="text-slate-500">
-                          Prev: {formatFloat(item.previousMeter)}
+                          Prev: {formatFloat(item.previousMeter, lang)}
                         </div>
                         <div className="text-rose-600 dark:text-rose-400 font-bold">
-                          Curr: {formatFloat(item.currentMeter)}{' '}
+                          Curr: {formatFloat(item.currentMeter, lang)}{' '}
                           <span className="text-[10px] text-slate-400 font-sans">({item.meterType})</span>
                         </div>
                       </td>
@@ -720,14 +740,14 @@ export default function ReconciliationPage() {
                       {/* Proposed Reconciled Meter */}
                       <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px]">
                         {isNonDispense ? (
-                          <span className="text-slate-400 italic text-[11px]">Eksklusi otomatis</span>
+                          <span className="text-slate-400 italic text-[11px]">{t('reconciliation.autoExclusion', 'Eksklusi otomatis')}</span>
                         ) : (
                           <div className="inline-block px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
                             <div className="text-emerald-700 dark:text-emerald-400 text-[10px]">
-                              Prev: {formatFloat(item.proposedPrevious)}
+                              Prev: {formatFloat(item.proposedPrevious, lang)}
                             </div>
                             <div className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center">
-                              Curr: {formatFloat(item.proposedCurrent)}{' '}
+                              Curr: {formatFloat(item.proposedCurrent, lang)}{' '}
                               <span className="text-[9px] text-emerald-600 ml-0.5">({item.meterType})</span>
                               <ArrowRight className="w-2.5 h-2.5 ml-1 text-emerald-500 inline" />
                             </div>
@@ -738,10 +758,10 @@ export default function ReconciliationPage() {
                       {/* Diagnostic & Strategy */}
                       <td className="py-2.5 px-4 max-w-xs">
                         <div className="text-[11px] font-medium text-slate-800 dark:text-slate-200">
-                          {item.description}
+                          {localizeDescription(item.description, lang)}
                         </div>
                         <div className="text-[10px] text-slate-400 dark:text-[#777] mt-0.5">
-                          {item.fixStrategy}
+                          {localizeStrategy(item.fixStrategy, lang)}
                         </div>
                       </td>
 
@@ -768,19 +788,19 @@ export default function ReconciliationPage() {
         {/* Pagination matching /history */}
         <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between text-xs text-slate-500 dark:text-[#888888]">
           <span>
-            Menampilkan{' '}
+            {t('reconciliation.showing', 'Menampilkan')}{' '}
             <span className="font-semibold text-slate-800 dark:text-white">
               {filteredAnomalies.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
             </span>{' '}
-            hingga{' '}
+            {t('reconciliation.to', 'hingga')}{' '}
             <span className="font-semibold text-slate-800 dark:text-white">
               {Math.min(currentPage * itemsPerPage, filteredAnomalies.length)}
             </span>{' '}
-            dari{' '}
+            {t('reconciliation.of', 'dari')}{' '}
             <span className="font-semibold text-slate-800 dark:text-white">
               {filteredAnomalies.length}
             </span>{' '}
-            anomali
+            {t('reconciliation.anomaliesCount', 'anomali')}
           </span>
 
           <div className="flex items-center space-x-1.5">
@@ -815,25 +835,27 @@ export default function ReconciliationPage() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Konfirmasi Rekonsiliasi Database</h3>
+                  <h3 className="text-sm font-bold">{t('reconciliation.modalApplyTitle', 'Konfirmasi Rekonsiliasi Database')}</h3>
                   <p className="text-[11px] text-slate-500 dark:text-[#888888]">
-                    Perubahan akan disimpan permanen dengan riwayat jejak audit
+                    {t('reconciliation.modalApplySubtitle', 'Perubahan akan disimpan permanen dengan riwayat jejak audit')}
                   </p>
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] text-xs space-y-1.5 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-sans">Total data diperbaiki:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{selectedIds.size} transaksi</span>
+                  <span className="text-slate-500 font-sans">{t('reconciliation.modalTotalFixed', 'Total data diperbaiki:')}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {selectedIds.size} {lang === 'id' ? 'transaksi' : 'transactions'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-sans">Bulan / Periode:</span>
+                  <span className="text-slate-500 font-sans">{t('reconciliation.modalPeriod', 'Bulan / Periode:')}</span>
                   <span className="font-bold text-slate-900 dark:text-white">{selectedMonthName} {selectedYear}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-sans">Keamanan:</span>
-                  <span className="text-emerald-600 font-bold font-sans">Dapat di-rollback kapan saja</span>
+                  <span className="text-slate-500 font-sans">{t('reconciliation.modalSafety', 'Keamanan:')}</span>
+                  <span className="text-emerald-600 font-bold font-sans">{t('reconciliation.modalSafetyDesc', 'Dapat di-rollback kapan saja')}</span>
                 </div>
               </div>
 
@@ -842,7 +864,7 @@ export default function ReconciliationPage() {
                   onClick={() => setIsConfirmApplyOpen(false)}
                   className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition"
                 >
-                  Batal
+                  {t('reconciliation.cancel', 'Batal')}
                 </button>
                 <button
                   onClick={executeApply}
@@ -854,7 +876,7 @@ export default function ReconciliationPage() {
                   ) : (
                     <Check className="w-3.5 h-3.5" />
                   )}
-                  <span>{applyMutation.isPending ? 'Menerapkan...' : 'Terapkan Sekarang'}</span>
+                  <span>{applyMutation.isPending ? t('reconciliation.modalApplying', 'Menerapkan...') : t('reconciliation.modalApplyNow', 'Terapkan Sekarang')}</span>
                 </button>
               </div>
             </div>
@@ -872,15 +894,15 @@ export default function ReconciliationPage() {
                   <RotateCcw className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Rollback Perbaikan Rekonsiliasi</h3>
+                  <h3 className="text-sm font-bold">{t('reconciliation.modalRollbackTitle', 'Rollback Perbaikan Rekonsiliasi')}</h3>
                   <p className="text-[11px] text-slate-500 dark:text-[#888888]">
-                    Kembalikan nilai meter ke kondisi sebelum perbaikan
+                    {t('reconciliation.modalRollbackSubtitle', 'Kembalikan nilai meter ke kondisi sebelum perbaikan')}
                   </p>
                 </div>
               </div>
 
               <p className="text-xs text-slate-600 dark:text-[#aaa] leading-relaxed">
-                Apakah Anda yakin ingin membatalkan perbaikan rekonsiliasi terakhir? Nilai meter pada log transaksi akan dipulihkan persis seperti data aslinya.
+                {t('reconciliation.modalRollbackDesc', 'Apakah Anda yakin ingin membatalkan perbaikan rekonsiliasi terakhir? Nilai meter pada log transaksi akan dipulihkan persis seperti data aslinya.')}
               </p>
 
               <div className="flex items-center justify-end space-x-2 pt-2">
@@ -888,7 +910,7 @@ export default function ReconciliationPage() {
                   onClick={() => setIsConfirmRollbackOpen(false)}
                   className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition"
                 >
-                  Batal
+                  {t('reconciliation.cancel', 'Batal')}
                 </button>
                 <button
                   onClick={() => rollbackMutation.mutate()}
@@ -900,7 +922,7 @@ export default function ReconciliationPage() {
                   ) : (
                     <RotateCcw className="w-3.5 h-3.5" />
                   )}
-                  <span>{rollbackMutation.isPending ? 'Me-rollback...' : 'Ya, Rollback'}</span>
+                  <span>{rollbackMutation.isPending ? t('reconciliation.modalRollingBack', 'Me-rollback...') : t('reconciliation.modalYesRollback', 'Ya, Rollback')}</span>
                 </button>
               </div>
             </div>
