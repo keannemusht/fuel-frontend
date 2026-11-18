@@ -35,10 +35,13 @@ const MONTH_NAMES_ERP = [
 interface ErpSummaryResponse {
   site: string;
   totalLogs: number;
+  multiEntry: { count: number; volume: number };
   siteInternal: { count: number; volume: number };
   otherConsumption: { count: number; volume: number };
-  allRegistered: { count: number; volume: number };
-  unregistered: { count: number; volume: number; sampleUnits: string[] };
+  details?: {
+    crossSite: { count: number; volume: number };
+    unregistered: { count: number; volume: number; sampleUnits: string[] };
+  };
 }
 
 interface ErpExportModalProps {
@@ -62,7 +65,7 @@ export default function ErpExportModal({
 }: ErpExportModalProps) {
   const { lang } = useLanguage();
   const [format, setFormat] = useState<'csv' | 'xlsx'>(initialFormat);
-  const [scope, setScope] = useState<'site_only' | 'other_consumption' | 'all_registered'>('site_only');
+  const [scope, setScope] = useState<'multi_entry' | 'other_consumption'>('multi_entry');
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Month Name in ERP format: e.g. 2026_JANUARY
@@ -72,12 +75,7 @@ export default function ErpExportModal({
   const otherSiteLabel = selectedSite === 'MUARA_PAHU' ? 'Senyiur' : 'Muara Pahu';
 
   // Computed File Name
-  const scopeSuffix =
-    scope === 'other_consumption'
-      ? '_OTHER_CONSUMPTION'
-      : scope === 'all_registered'
-      ? '_ALL_ERP'
-      : '';
+  const scopeSuffix = scope === 'other_consumption' ? '_OTHER_CONSUMPTION' : '';
   const computedFileName = `UPLOAD_ERP_FUEL_${targetSiteCode}${scopeSuffix}_${selectedYear}_${monthNameErp}.${format}`;
 
   // Fetch ERP Telemetry Breakdown
@@ -135,9 +133,8 @@ export default function ErpExportModal({
 
   const getScopeCount = () => {
     if (!summary) return 0;
-    if (scope === 'site_only') return summary.siteInternal.count;
-    if (scope === 'other_consumption') return summary.otherConsumption.count;
-    return summary.allRegistered.count;
+    if (scope === 'multi_entry') return summary.siteInternal.count;
+    return summary.otherConsumption.count;
   };
 
   return (
@@ -223,11 +220,11 @@ export default function ErpExportModal({
               </div>
             </div>
 
-            {/* Scope Selection */}
+            {/* Scope Selection: 2 OPSI */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777]">
-                  {lang === 'id' ? 'Klasifikasi Unit Syshab' : 'Syshab Unit Scope'}
+                  {lang === 'id' ? 'Pilih Opsi Ekspor Syshab' : 'Select Syshab Export Option'}
                 </label>
                 {isLoadingSummary && (
                   <span className="text-[10px] text-slate-400 dark:text-neutral-500 flex items-center space-x-1">
@@ -237,42 +234,42 @@ export default function ErpExportModal({
                 )}
               </div>
 
-              <div className="space-y-2">
-                {/* Scope 1: Site Internal */}
+              <div className="space-y-2.5">
+                {/* Opsi 1: Multi Entry Upload Syshab */}
                 <label
-                  onClick={() => setScope('site_only')}
-                  className={`block p-3 rounded-2xl border transition cursor-pointer ${
-                    scope === 'site_only'
-                      ? 'bg-slate-900/[0.03] dark:bg-white/[0.05] border-slate-900 dark:border-white/30'
+                  onClick={() => setScope('multi_entry')}
+                  className={`block p-3.5 rounded-2xl border transition cursor-pointer ${
+                    scope === 'multi_entry'
+                      ? 'bg-slate-900/[0.04] dark:bg-white/[0.06] border-slate-900 dark:border-white/40 ring-1 ring-slate-900/10 dark:ring-white/10'
                       : 'bg-white dark:bg-transparent border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start space-x-2.5">
+                    <div className="flex items-start space-x-3">
                       <input
                         type="radio"
-                        name="erp_scope"
-                        checked={scope === 'site_only'}
-                        onChange={() => setScope('site_only')}
+                        name="syshab_scope"
+                        checked={scope === 'multi_entry'}
+                        onChange={() => setScope('multi_entry')}
                         className="mt-0.5 accent-slate-900 dark:accent-white cursor-pointer"
                       />
                       <div>
-                        <div className="font-semibold text-slate-900 dark:text-white text-xs">
-                          {lang === 'id' ? `Unit Internal ${siteLabel}` : `${siteLabel} Internal Units`}
+                        <div className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
+                          Multi Entry Upload Syshab
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-snug">
                           {lang === 'id'
-                            ? `Hanya unit yang terdaftar di Master Equipment ${siteLabel}`
-                            : `Only equipment registered in ${siteLabel} master list`}
+                            ? `Unit resmi yang terdaftar di Master Equipment ${siteLabel}`
+                            : `Official equipment registered in ${siteLabel} Master Equipment`}
                         </div>
                       </div>
                     </div>
                     {summary && (
                       <div className="text-right shrink-0">
-                        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
+                        <span className="font-mono text-xs font-semibold text-slate-800 dark:text-white">
                           {summary.siteInternal.count.toLocaleString()} trx
                         </span>
-                        <div className="font-mono text-[10px] text-slate-400 dark:text-neutral-500">
+                        <div className="font-mono text-[11px] text-slate-500 dark:text-neutral-400">
                           {summary.siteInternal.volume.toLocaleString()} L
                         </div>
                       </div>
@@ -280,84 +277,42 @@ export default function ErpExportModal({
                   </div>
                 </label>
 
-                {/* Scope 2: Other Consumption */}
+                {/* Opsi 2: Other Consumption */}
                 <label
                   onClick={() => setScope('other_consumption')}
-                  className={`block p-3 rounded-2xl border transition cursor-pointer ${
+                  className={`block p-3.5 rounded-2xl border transition cursor-pointer ${
                     scope === 'other_consumption'
-                      ? 'bg-slate-900/[0.03] dark:bg-white/[0.05] border-slate-900 dark:border-white/30'
+                      ? 'bg-slate-900/[0.04] dark:bg-white/[0.06] border-slate-900 dark:border-white/40 ring-1 ring-slate-900/10 dark:ring-white/10'
                       : 'bg-white dark:bg-transparent border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start space-x-2.5">
+                    <div className="flex items-start space-x-3">
                       <input
                         type="radio"
-                        name="erp_scope"
+                        name="syshab_scope"
                         checked={scope === 'other_consumption'}
                         onChange={() => setScope('other_consumption')}
                         className="mt-0.5 accent-slate-900 dark:accent-white cursor-pointer"
                       />
                       <div>
-                        <div className="font-semibold text-slate-900 dark:text-white text-xs">
-                          {lang === 'id' ? 'Other Consumption (Lintas Site)' : 'Other Consumption (Cross-Site)'}
+                        <div className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
+                          Other Consumption
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-snug">
                           {lang === 'id'
-                            ? `Unit terdaftar di ${otherSiteLabel} yang mengisi di ${siteLabel}`
-                            : `Equipment registered in ${otherSiteLabel} fueled at ${siteLabel}`}
+                            ? `Konsumsi luar: Unit ${otherSiteLabel} & seluruh unit non-Master Equipment`
+                            : `Outside consumption: ${otherSiteLabel} fleet & non-Master Equipment units`}
                         </div>
                       </div>
                     </div>
                     {summary && (
                       <div className="text-right shrink-0">
-                        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
+                        <span className="font-mono text-xs font-semibold text-slate-800 dark:text-white">
                           {summary.otherConsumption.count.toLocaleString()} trx
                         </span>
-                        <div className="font-mono text-[10px] text-slate-400 dark:text-neutral-500">
+                        <div className="font-mono text-[11px] text-slate-500 dark:text-neutral-400">
                           {summary.otherConsumption.volume.toLocaleString()} L
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </label>
-
-                {/* Scope 3: All Registered */}
-                <label
-                  onClick={() => setScope('all_registered')}
-                  className={`block p-3 rounded-2xl border transition cursor-pointer ${
-                    scope === 'all_registered'
-                      ? 'bg-slate-900/[0.03] dark:bg-white/[0.05] border-slate-900 dark:border-white/30'
-                      : 'bg-white dark:bg-transparent border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start space-x-2.5">
-                      <input
-                        type="radio"
-                        name="erp_scope"
-                        checked={scope === 'all_registered'}
-                        onChange={() => setScope('all_registered')}
-                        className="mt-0.5 accent-slate-900 dark:accent-white cursor-pointer"
-                      />
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-white text-xs">
-                          {lang === 'id' ? 'Semua Unit Terdaftar Syshab' : 'All Syshab Registered Units'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-snug">
-                          {lang === 'id'
-                            ? 'Gabungan unit internal dan lintas-site yang tercatat di Master Equipment'
-                            : 'Combined internal and cross-site registered equipment'}
-                        </div>
-                      </div>
-                    </div>
-                    {summary && (
-                      <div className="text-right shrink-0">
-                        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
-                          {summary.allRegistered.count.toLocaleString()} trx
-                        </span>
-                        <div className="font-mono text-[10px] text-slate-400 dark:text-neutral-500">
-                          {summary.allRegistered.volume.toLocaleString()} L
                         </div>
                       </div>
                     )}
@@ -366,20 +321,20 @@ export default function ErpExportModal({
               </div>
             </div>
 
-            {/* Clean Auto-Exclusion Protection Notice */}
-            {summary && summary.unregistered.count > 0 && (
-              <div className="flex items-start space-x-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] text-slate-600 dark:text-neutral-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-[11px] leading-relaxed">
-                  <span className="font-semibold text-slate-800 dark:text-neutral-200">
-                    {summary.unregistered.count.toLocaleString()} transaksi unit non-Syshab
-                  </span>{' '}
-                  {lang === 'id'
-                    ? `(kontraktor/vendor seperti ${summary.unregistered.sampleUnits.slice(0, 3).join(', ')}) otomatis disaring keluar agar upload Syshab tidak error.`
-                    : `(contractors/vendors such as ${summary.unregistered.sampleUnits.slice(0, 3).join(', ')}) are automatically excluded to keep upload error-free.`}
-                </div>
+            {/* Reconciliation Note: 100% Volume Accounted For */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] text-slate-600 dark:text-neutral-300">
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-[11px]">
+                  {lang === 'id' ? 'Total konsumsi bulan ini terakomodasi 100%:' : '100% of fuel records accounted for:'}
+                </span>
               </div>
-            )}
+              {summary && (
+                <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-neutral-200">
+                  {summary.totalLogs.toLocaleString()} trx ({(summary.siteInternal.volume + summary.otherConsumption.volume).toLocaleString()} L)
+                </span>
+              )}
+            </div>
 
             {/* Target File Preview */}
             <div className="p-3 rounded-2xl bg-slate-100/60 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between gap-2">
