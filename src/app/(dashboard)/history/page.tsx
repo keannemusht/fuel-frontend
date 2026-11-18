@@ -135,7 +135,6 @@ export default function HistoryPage() {
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showErpExportModal, setShowErpExportModal] = useState<boolean>(false);
   const [erpExportFormat, setErpExportFormat] = useState<'csv' | 'xlsx'>('csv');
-  const [erpFilter, setErpFilter] = useState<'ALL' | 'SITE_INTERNAL' | 'OTHER_CONSUMPTION' | 'UNREGISTERED'>('ALL');
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // CRUD State
@@ -383,13 +382,10 @@ export default function HistoryPage() {
 
       const matchesShift = shiftFilter === 'ALL' || log.shift === shiftFilter;
       const matchesStatus = statusFilter === 'ALL' || log.syncStatus === statusFilter;
-      const matchesErp =
-        erpFilter === 'ALL' ||
-        ((log as any).erpClassification || 'SITE_INTERNAL') === erpFilter;
 
-      return matchesSearch && matchesShift && matchesStatus && matchesErp;
+      return matchesSearch && matchesShift && matchesStatus;
     });
-  }, [logs, searchTerm, shiftFilter, statusFilter, erpFilter]);
+  }, [logs, searchTerm, shiftFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
@@ -670,7 +666,7 @@ export default function HistoryPage() {
       {/* Search & Filter Toolbar */}
       {(() => {
         const isFiltered = shiftFilter !== 'ALL' || statusFilter !== 'ALL';
-        const activeFilterCount = (shiftFilter !== 'ALL' ? 1 : 0) + (statusFilter !== 'ALL' ? 1 : 0) + (erpFilter !== 'ALL' ? 1 : 0);
+        const activeFilterCount = (shiftFilter !== 'ALL' ? 1 : 0) + (statusFilter !== 'ALL' ? 1 : 0);
 
         return (
           <div className="space-y-2.5">
@@ -742,7 +738,6 @@ export default function HistoryPage() {
                             onClick={() => {
                               setShiftFilter('ALL');
                               setStatusFilter('ALL');
-                              setErpFilter('ALL');
                               setCurrentPage(1);
                             }}
                             className="text-[11px] font-medium text-rose-500 hover:text-rose-600 dark:text-rose-400 flex items-center space-x-1 transition cursor-pointer"
@@ -862,70 +857,6 @@ export default function HistoryPage() {
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                               <span>{t('history.failed', 'FAILED')}</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Klasifikasi ERP Filter */}
-                        <div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-[#777777] block mb-2">
-                            {lang === 'id' ? 'Klasifikasi ERP Master' : 'ERP Master Classification'}
-                          </span>
-                          <div className="space-y-1.5">
-                            <button
-                              onClick={() => {
-                                setErpFilter('ALL');
-                                setCurrentPage(1);
-                              }}
-                              className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all cursor-pointer ${
-                                erpFilter === 'ALL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
-                              }`}
-                            >
-                              {lang === 'id' ? 'Semua Klasifikasi' : 'All Classifications'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setErpFilter('SITE_INTERNAL');
-                                setCurrentPage(1);
-                              }}
-                              className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                                erpFilter === 'SITE_INTERNAL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
-                              }`}
-                            >
-                              <span>{lang === 'id' ? `Unit Site (${siteLabel})` : `${siteLabel} Units`}</span>
-                              <span className="text-[10px] opacity-75 font-mono">Internal</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                setErpFilter('OTHER_CONSUMPTION');
-                                setCurrentPage(1);
-                              }}
-                              className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                                erpFilter === 'OTHER_CONSUMPTION'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
-                              }`}
-                            >
-                              <span>Other Consumption</span>
-                              <span className="text-[10px] opacity-75 font-mono">Lintas-Site</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                setErpFilter('UNREGISTERED');
-                                setCurrentPage(1);
-                              }}
-                              className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                                erpFilter === 'UNREGISTERED'
-                                  ? 'bg-amber-500 text-white font-semibold'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
-                              }`}
-                            >
-                              <span>Non-ERP / Kontraktor</span>
-                              <span className="text-[10px] opacity-75 font-mono">Dikecualikan</span>
                             </button>
                           </div>
                         </div>
@@ -1068,22 +999,6 @@ export default function HistoryPage() {
                   <td className="py-3 px-3.5 text-left font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                     <div className="flex items-center space-x-1.5">
                       <span>{log.unitCode}</span>
-                      {(log as any).erpClassification === 'OTHER_CONSUMPTION' && (
-                        <span
-                          className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 shrink-0"
-                          title="Other Consumption: Terdaftar di site lain (misal MP) yang mengisi solar di site ini"
-                        >
-                          Other
-                        </span>
-                      )}
-                      {(log as any).erpClassification === 'UNREGISTERED' && log.unitCode !== 'PENGISIAN' && log.unitCode !== 'SALDO AWAL' && (
-                        <span
-                          className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0"
-                          title="Non-ERP: Unit tidak terdaftar di database ERP (Dikecualikan dari export ERP)"
-                        >
-                          Non-ERP
-                        </span>
-                      )}
                       {log.bypassValidation && log.unitCode !== 'PENGISIAN' && log.bypassReason !== 'Historical Google Sheets Sync' && (
                         <span
                           title={`Bypass: ${log.bypassReason || 'Admin authorized'}`}
