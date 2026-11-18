@@ -88,7 +88,7 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 }
 
 .framer-card-hover {
@@ -458,7 +458,7 @@ html.light .bg-\[\#0A0A0A\],
 html.light .framer-card {
   background-color: var(--bg-card) !important;
   border-color: var(--border-subtle) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  box-shadow: none !important;
 }
 
 /* Secondary Panels, Filters, Pills & Quick Statuses */

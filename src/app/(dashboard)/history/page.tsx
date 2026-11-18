@@ -408,7 +408,7 @@ export default function HistoryPage() {
         {/* Action Controls & Month Selector */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Month & Year Dropdown Pill */}
-          <div className="flex items-center px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] shadow-sm">
+          <div className="flex items-center px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1]">
             <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-500 dark:text-white/60 shrink-0" />
             <select
               value={selectedMonth}
@@ -445,7 +445,7 @@ export default function HistoryPage() {
           <button
             onClick={() => syncMonthMutation.mutate()}
             disabled={syncMonthMutation.isPending}
-            className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all disabled:opacity-50"
             title={`Sync all records for ${selectedMonthLabel} into sheet tab "${selectedMonthLabel}"`}
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${syncMonthMutation.isPending ? 'animate-spin' : ''}`} />
@@ -457,7 +457,7 @@ export default function HistoryPage() {
             <button
               type="button"
               onClick={() => setShowDataMenu((prev) => !prev)}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-xs cursor-pointer"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all cursor-pointer"
               title={lang === 'id' ? 'Menu Impor, Ekspor Excel, Ekspor ERP & Google Sheets' : 'Import, Excel Export, ERP Export & Google Sheets menu'}
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
@@ -605,7 +605,7 @@ export default function HistoryPage() {
       {/* Responsive KPI Cards matching /dispenser */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
         {/* Card 1: Fuel Dispensed */}
-        <div className="framer-card p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden shadow-sm">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('history.fuelDispensed', 'Fuel Dispensed')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
@@ -620,7 +620,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Card 2: Inbound Refills */}
-        <div className="framer-card p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden shadow-sm">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('history.inboundRefills', 'Inbound Refills')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
@@ -635,7 +635,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Card 3: Transactions */}
-        <div className="framer-card p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden shadow-sm">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('history.transactions', 'Transactions')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
@@ -650,7 +650,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Card 4: Active Units */}
-        <div className="framer-card p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden shadow-sm">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('history.activeUnits', 'Active Units')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
@@ -665,7 +665,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Card 5: Sheet Tab Sync */}
-        <div className="framer-card p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden shadow-sm">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#121212]/60 relative overflow-hidden">
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-[#888888]">{t('history.sheetSync', 'Sheet Tab Sync')}</p>
           <div className="mt-1.5 sm:mt-2 flex items-baseline justify-between">
             <h3 className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
@@ -691,7 +691,7 @@ export default function HistoryPage() {
 
         return (
           <div className="space-y-2.5">
-            <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-20">
+            <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-20">
               {/* Search input with rounded-full pill */}
               <div className="relative flex-1 max-w-md">
                 <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666666]" />
@@ -725,7 +725,7 @@ export default function HistoryPage() {
                 <div className="relative" ref={filterRef}>
                   <button
                     onClick={() => setShowFilterDropdown((prev) => !prev)}
-                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer ${
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all active:scale-95 cursor-pointer ${
                       activeFilterCount > 0
                         ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white'
                         : 'bg-white dark:bg-[#0D0D0D] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
@@ -783,7 +783,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'ALL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -796,7 +796,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'SHIFT 1'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -809,7 +809,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-center transition-all cursor-pointer ${
                                 shiftFilter === 'SHIFT 2'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -831,7 +831,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all cursor-pointer ${
                                 statusFilter === 'ALL'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -844,7 +844,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all cursor-pointer ${
                                 statusFilter === 'SYNCED'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -858,7 +858,7 @@ export default function HistoryPage() {
                               }}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all cursor-pointer ${
                                 statusFilter === 'PENDING'
-                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+                                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                               }`}
                             >
@@ -963,7 +963,7 @@ export default function HistoryPage() {
       })()}
 
       {/* 15 Operational Columns Table matching ShiftLogTable.tsx */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xl">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
@@ -1128,7 +1128,7 @@ export default function HistoryPage() {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-full border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-full border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -1138,7 +1138,7 @@ export default function HistoryPage() {
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-full border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-full border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>

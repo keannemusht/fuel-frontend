@@ -518,7 +518,7 @@ export default function BackdatePage() {
 
         {/* Date Presets Segmented Pill & Link to Monthly History */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] shadow-sm">
+          <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08]">
             <div className="flex items-center px-2 py-1 text-[11px] text-slate-400 dark:text-[#777] font-medium">
               <Calendar className="w-3.5 h-3.5 mr-1.5 opacity-70" />
               <span>{t('backdate.preset', 'Preset:')}</span>
@@ -528,7 +528,7 @@ export default function BackdatePage() {
               onClick={() => setDateStr(getYesterdayStr())}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 dateStr === getYesterdayStr()
-                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black shadow-sm font-bold'
+                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black font-bold'
                   : 'text-slate-600 hover:text-slate-900 dark:text-white/70 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
               }`}
             >
@@ -539,7 +539,7 @@ export default function BackdatePage() {
               onClick={() => setDateStr(getTwoDaysAgoStr())}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 dateStr === getTwoDaysAgoStr()
-                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black shadow-sm font-bold'
+                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black font-bold'
                   : 'text-slate-600 hover:text-slate-900 dark:text-white/70 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
               }`}
             >
@@ -550,7 +550,7 @@ export default function BackdatePage() {
               onClick={() => setDateStr(getTodayStr())}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 dateStr === getTodayStr()
-                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black shadow-sm font-bold'
+                  ? 'bg-slate-900 !text-white dark:bg-white dark:!text-black font-bold'
                   : 'text-slate-600 hover:text-slate-900 dark:text-white/70 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
               }`}
             >
@@ -560,7 +560,7 @@ export default function BackdatePage() {
 
           <Link
             href="/history"
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl text-xs font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] transition-all shadow-sm"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl text-xs font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] transition-all"
           >
             <History className="w-3.5 h-3.5" />
             <span>{t('backdate.monthlyHistory', 'Monthly History')}</span>
@@ -575,7 +575,7 @@ export default function BackdatePage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between shadow-sm"
+            className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between"
           >
             <div className="flex items-center space-x-2.5">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
@@ -595,7 +595,7 @@ export default function BackdatePage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-center justify-between shadow-sm"
+            className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-center justify-between"
           >
             <div className="flex items-center space-x-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
@@ -616,7 +616,7 @@ export default function BackdatePage() {
         {/* Left Column: Transaction Details (7 Cols) */}
         <div className="lg:col-span-7 space-y-5">
           {/* 1. Date, Time & Shift Card */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-md transition-shadow space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-slate-700 dark:text-white/70" />
@@ -641,7 +641,7 @@ export default function BackdatePage() {
                     value={dateStr}
                     max={getTodayStr()}
                     onChange={(e) => setDateStr(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-900 dark:focus:border-white focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-all shadow-sm"
+                    className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-900 dark:focus:border-white focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-all"
                     required
                   />
                 </div>
@@ -661,7 +661,7 @@ export default function BackdatePage() {
                     step="60"
                     value={jamStr}
                     onChange={(e) => setJamStr(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-900 dark:focus:border-white focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-all shadow-sm"
+                    className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-900 dark:focus:border-white focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-all"
                     required
                   />
                 </div>
@@ -714,7 +714,7 @@ export default function BackdatePage() {
           </div>
 
           {/* 2. Target Equipment Unit & Storage Tank */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-md transition-shadow space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
                 <Truck className="w-4 h-4 text-slate-700 dark:text-white/70" />
@@ -969,7 +969,7 @@ export default function BackdatePage() {
           </div>
 
           {/* 3. Fuel Volume, Operator & Officer */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-md transition-shadow space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
                 <Fuel className="w-4 h-4 text-slate-700 dark:text-white/70" />
@@ -1001,7 +1001,7 @@ export default function BackdatePage() {
                     placeholder="0.0"
                     value={volumeLiters}
                     onChange={(e) => setVolumeLiters(e.target.value)}
-                    className="w-full text-2xl font-mono font-bold px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition-all shadow-xs"
+                    className="w-full text-2xl font-mono font-bold px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition-all"
                     required
                   />
                   <span className="absolute right-4 top-3.5 sm:top-4 text-xs font-mono font-medium text-slate-500 dark:text-[#888]">
@@ -1047,7 +1047,7 @@ export default function BackdatePage() {
                     min="0"
                     value={fuelInLiters}
                     onChange={(e) => setFuelInLiters(e.target.value)}
-                    className="w-full text-xs font-mono font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
+                    className="w-full text-xs font-mono font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                   <span className="absolute right-3 top-3 text-[10px] font-semibold text-slate-400">
                     {t('common.liters', 'LITER')}
@@ -1069,7 +1069,7 @@ export default function BackdatePage() {
                     placeholder={lang === 'id' ? 'Petugas pengisi...' : 'Fuelman on duty...'}
                     value={fuelmanName}
                     onChange={(e) => setFuelmanName(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2.5 pl-8 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
+                    className="w-full text-xs font-semibold px-3 py-2.5 pl-8 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 absolute left-2.5 top-3" />
                 </div>
@@ -1097,7 +1097,7 @@ export default function BackdatePage() {
         {/* Right Column: Live Meter Validation & Telemetry (5 Cols) */}
         <div className="lg:col-span-5 space-y-5">
           {/* Chronological Boundary Timeline Card */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
                 <History className="w-4 h-4 text-slate-700 dark:text-white/70" />
@@ -1110,7 +1110,7 @@ export default function BackdatePage() {
                   Sinkronisasi Log...
                 </span>
               ) : selectedUnit ? (
-                <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.12] shadow-sm">
+                <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.12]">
                   {selectedUnit.unitCode}
                 </span>
               ) : null}
@@ -1218,7 +1218,7 @@ export default function BackdatePage() {
           </div>
 
           {/* Interactive Live HM & KM Cards */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-slate-700 dark:text-white/70" />
@@ -1256,7 +1256,7 @@ export default function BackdatePage() {
                     ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
                     : bypassValidation
                     ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
-                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1287,7 +1287,7 @@ export default function BackdatePage() {
                       if (e.key === '-' || e.key === 'Minus') e.preventDefault();
                     }}
                     onChange={(e) => setCurrentKm(e.target.value.replace(/-/g, ''))}
-                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     required={unitHasKm}
                   />
                   {isKmProvided && (
@@ -1355,7 +1355,7 @@ export default function BackdatePage() {
                     ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
                     : bypassValidation
                     ? 'bg-amber-500/5 dark:bg-[#17130A] border-amber-500/30'
-                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1386,7 +1386,7 @@ export default function BackdatePage() {
                       if (e.key === '-' || e.key === 'Minus') e.preventDefault();
                     }}
                     onChange={(e) => setCurrentHm(e.target.value.replace(/-/g, ''))}
-                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     required={unitHasHm}
                   />
                   {isHmProvided && (
@@ -1460,7 +1460,7 @@ export default function BackdatePage() {
                     ? 'bg-slate-50 dark:bg-[#121212] border-slate-200 dark:border-white/[0.08]'
                     : isKwhValid
                     ? 'bg-slate-50 dark:bg-[#121212] border-slate-300 dark:border-white/20'
-                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30 shadow-xs'
+                    : 'bg-rose-500/5 dark:bg-[#180A0A] border-rose-500/30'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1487,7 +1487,7 @@ export default function BackdatePage() {
                       if (e.key === '-' || e.key === 'Minus') e.preventDefault();
                     }}
                     onChange={(e) => setCurrentKwh(e.target.value.replace(/-/g, ''))}
-                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+                    className="w-full text-xl font-mono font-bold px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-white/[0.12] text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     required={unitHasKwh}
                   />
                   {isKwhProvided && (
@@ -1583,7 +1583,7 @@ export default function BackdatePage() {
                   !selectedUnitId ||
                   !isMeterValid
                 }
-                className="w-full py-3.5 sm:py-4 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-[0.99] text-white dark:text-black font-semibold text-xs tracking-wide uppercase transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed text-white-forced cursor-pointer"
+                className="w-full py-3.5 sm:py-4 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-[0.99] text-white dark:text-black font-semibold text-xs tracking-wide uppercase transition-all flex items-center justify-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed text-white-forced cursor-pointer"
               >
                 {backdateMutation.isPending ? (
                   <span className="text-white dark:text-black font-semibold">
@@ -1614,7 +1614,7 @@ export default function BackdatePage() {
       </form>
 
       {/* Recent Logs on Selected Date Table */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0D0D0D] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="flex items-center space-x-2">
@@ -1671,9 +1671,9 @@ export default function BackdatePage() {
                     <button
                       type="button"
                       onClick={() => setShowTableFilterDropdown((prev) => !prev)}
-                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
                         activeTableFilterCount > 0
-                          ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-md'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white'
                           : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white/80'
                       }`}
                     >
@@ -1727,7 +1727,7 @@ export default function BackdatePage() {
                                 onClick={() => setTableShiftFilter('ALL')}
                                 className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
                                   tableShiftFilter === 'ALL'
-                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                                 }`}
                               >
@@ -1738,7 +1738,7 @@ export default function BackdatePage() {
                                 onClick={() => setTableShiftFilter('SHIFT 1')}
                                 className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
                                   tableShiftFilter === 'SHIFT 1'
-                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                                 }`}
                               >
@@ -1749,7 +1749,7 @@ export default function BackdatePage() {
                                 onClick={() => setTableShiftFilter('SHIFT 2')}
                                 className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
                                   tableShiftFilter === 'SHIFT 2'
-                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                                 }`}
                               >
@@ -1769,7 +1769,7 @@ export default function BackdatePage() {
                                 onClick={() => setTableStatusFilter('ALL')}
                                 className={`px-2 py-1 rounded-lg text-xs font-medium text-center transition-all ${
                                   tableStatusFilter === 'ALL'
-                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm'
+                                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-semibold'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-[#888888] dark:hover:bg-white/[0.08]'
                                 }`}
                               >
