@@ -575,7 +575,7 @@ export default function AuditPage() {
       {/* 2. Top Executive Telemetry & KPI Cards - Clean Minimalist Industrial */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* KPI 1: Total Audit Records */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-slate-500 dark:text-[#777]">
@@ -600,7 +600,7 @@ export default function AuditPage() {
         </div>
 
         {/* KPI 2: Auth & Session Logins */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-slate-500 dark:text-[#777]">
@@ -626,7 +626,7 @@ export default function AuditPage() {
         </div>
 
         {/* KPI 3: Data Mutations */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-slate-500 dark:text-[#777]">
@@ -651,7 +651,7 @@ export default function AuditPage() {
         </div>
 
         {/* KPI 4: Critical & Overrides */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-slate-500 dark:text-[#777]">
@@ -677,7 +677,7 @@ export default function AuditPage() {
       </div>
 
       {/* 3. Segmented Quick Tabs & Search Filters Bar */}
-      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs space-y-3">
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/[0.08] space-y-3">
         {/* Row 1: Segmented Filter Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/80 dark:border-white/[0.06]">
@@ -840,7 +840,7 @@ export default function AuditPage() {
       </div>
 
       {/* 4. Enhanced High-Contrast Audit Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>

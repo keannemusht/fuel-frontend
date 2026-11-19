@@ -242,7 +242,7 @@ export default function TanksPage() {
       </div>
 
       {/* Multi-Storage Total Stock Summary Banner - Monochromatic Industrial */}
-      <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs relative overflow-hidden">
+      <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
@@ -302,7 +302,7 @@ export default function TanksPage() {
           return (
             <div
               key={tank.id}
-              className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] relative overflow-hidden space-y-4 bg-white dark:bg-[#0A0A0A] shadow-xs"
+              className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] relative overflow-hidden space-y-4 bg-white dark:bg-[#0A0A0A]"
             >
               <div className="flex items-start justify-between">
                 <div>

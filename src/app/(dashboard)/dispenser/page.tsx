@@ -535,7 +535,7 @@ export default function DispenserPage() {
         <div className="lg:col-span-7 space-y-5">
           <form
             onSubmit={handleSubmit}
-            className="p-5 sm:p-7 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm space-y-4"
+            className="p-5 sm:p-7 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] space-y-4"
           >
             {/* Top Bar: Operational Mode Toggle & Keypad Switch */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.06] gap-3">
@@ -926,7 +926,7 @@ export default function DispenserPage() {
 
           {/* Unit Telemetry Info */}
           {selectedUnit ? (
-            <div className="p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm space-y-3.5">
+            <div className="p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] space-y-3.5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.06]">
                 <div>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white tracking-tight">{selectedUnit.unitCode}</h3>
@@ -997,7 +997,7 @@ export default function DispenserPage() {
               </div>
             </div>
           ) : (
-            <div className="p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-sm text-center space-y-2">
+            <div className="p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] text-center space-y-2">
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[0.05] mx-auto flex items-center justify-center text-slate-400 dark:text-white/50 border border-slate-200 dark:border-white/[0.08]">
                 <Truck className="w-5 h-5" />
               </div>

@@ -263,7 +263,7 @@ export default function UsersPage() {
       {/* Quick KPI Stats Cards - Sophisticated Monochromatic Industrial Design */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Users */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">
               {t('users.totalUsers')}
@@ -283,7 +283,7 @@ export default function UsersPage() {
         </div>
 
         {/* Active Accounts */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">
               {t('users.activeAccounts')}
@@ -304,7 +304,7 @@ export default function UsersPage() {
         </div>
 
         {/* Administrators */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">
               {t('users.administrators')}
@@ -324,7 +324,7 @@ export default function UsersPage() {
         </div>
 
         {/* Fuelmen & Field Crew */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+        <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#888888]">
               {t('users.fuelmenOfficers')}
@@ -647,7 +647,7 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table - High-End Minimalist Enterprise Layout */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] shadow-xs">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>

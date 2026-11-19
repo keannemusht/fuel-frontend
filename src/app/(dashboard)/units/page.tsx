@@ -178,7 +178,7 @@ export default function UnitsPage() {
           <div className="flex items-center space-x-2 self-start sm:self-auto">
             <button
               onClick={() => setShowImportModal(true)}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all shadow-sm"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-slate-800 dark:text-white font-medium text-xs border border-slate-200 dark:border-white/[0.1] active:scale-95 transition-all cursor-pointer"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{t('units.importExcel', 'Import Excel')}</span>
@@ -189,7 +189,7 @@ export default function UnitsPage() {
                 resetForm();
                 setShowModal(true);
               }}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black font-semibold text-xs shadow-md hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-95 transition-all text-white-forced"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black font-semibold text-xs hover:bg-slate-800 dark:hover:bg-[#EAEAEA] active:scale-95 transition-all text-white-forced cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-white dark:text-black" />
               <span className="text-white dark:text-black font-semibold">{t('units.addUnit', 'Register Unit')}</span>
@@ -200,7 +200,7 @@ export default function UnitsPage() {
 
       {/* Search Input */}
       <div className="relative max-w-md">
-        <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-slate-400 dark:text-[#666]" />
+        <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#666]" />
         <input
           type="text"
           value={search}
@@ -209,25 +209,26 @@ export default function UnitsPage() {
             setCurrentPage(1);
           }}
           placeholder={t('units.searchPlaceholder', 'Search unit code, plate, or model...')}
-          className="w-full text-xs pl-9 pr-4 py-2.5 rounded-full bg-white dark:bg-[#0D0D0D] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#666] focus:border-slate-400 dark:focus:border-white/30 focus:outline-none font-mono shadow-sm"
+          className="w-full text-xs pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-full text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#666] focus:border-slate-400 dark:focus:border-white/30 focus:outline-none font-mono"
         />
       </div>
 
-      {/* Units Table */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white/70 dark:bg-[#0A0A0A] shadow-xl backdrop-blur-md">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
-              <th className="py-3 px-4">{t('units.colCode', 'NO UNIT')}</th>
-              <th className="py-3 px-4">{t('units.colCategory', 'KATEGORI')}</th>
-              <th className="py-3 px-4">{t('units.colType', 'TYPE')}</th>
-              <th className="py-3 px-4">{t('units.colPlate', 'PLATE NUMBER')}</th>
-              <th className="py-3 px-4 text-right">{t('units.colLastKm', 'LAST KM')}</th>
-              <th className="py-3 px-4 text-right">{t('units.colLastHm', 'LAST HM')}</th>
-              <th className="py-3 px-4 text-center">{t('units.colStatus', 'STATUS')}</th>
-              {canManage && <th className="py-3 px-4 text-center">{t('units.colActions', 'ACTION')}</th>}
-            </tr>
-          </thead>
+      {/* Units Table Container */}
+      <div className="rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-[#111111] border-b border-slate-200 dark:border-white/[0.06] text-[11px] font-medium text-slate-500 dark:text-[#888888]">
+                <th className="py-3 px-4">{t('units.colCode', 'NO UNIT')}</th>
+                <th className="py-3 px-4">{t('units.colCategory', 'KATEGORI')}</th>
+                <th className="py-3 px-4">{t('units.colType', 'TYPE')}</th>
+                <th className="py-3 px-4">{t('units.colPlate', 'PLATE NUMBER')}</th>
+                <th className="py-3 px-4 text-right">{t('units.colLastKm', 'LAST KM')}</th>
+                <th className="py-3 px-4 text-right">{t('units.colLastHm', 'LAST HM')}</th>
+                <th className="py-3 px-4 text-center">{t('units.colStatus', 'STATUS')}</th>
+                {canManage && <th className="py-3 px-4 text-center">{t('units.colActions', 'ACTION')}</th>}
+              </tr>
+            </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] font-mono text-[11px]">
             {isLoading ? (
               <tr>
@@ -289,6 +290,7 @@ export default function UnitsPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination Footer */}
         <div className="px-5 py-3 border-t border-slate-200 dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-[#888888] bg-slate-50/80 dark:bg-[#111111]/60">
@@ -332,7 +334,7 @@ export default function UnitsPage() {
               onClick={() => setCurrentPage(1)}
               disabled={activePage === 1}
               title={lang === 'id' ? 'Halaman Pertama' : 'First Page'}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition cursor-pointer"
             >
               <ChevronsLeft className="w-3.5 h-3.5" />
             </button>
@@ -340,12 +342,12 @@ export default function UnitsPage() {
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={activePage === 1}
               title={lang === 'id' ? 'Sebelumnya' : 'Previous'}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
 
-            <span className="px-2.5 py-1 text-xs font-mono font-medium text-slate-700 dark:text-white/90 bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] rounded-lg shadow-sm">
+            <span className="px-2.5 py-1 text-xs font-mono font-medium text-slate-700 dark:text-white/90 bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] rounded-lg">
               {activePage} / {totalPages}
             </span>
 
@@ -353,7 +355,7 @@ export default function UnitsPage() {
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={activePage === totalPages}
               title={lang === 'id' ? 'Berikutnya' : 'Next'}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -361,7 +363,7 @@ export default function UnitsPage() {
               onClick={() => setCurrentPage(totalPages)}
               disabled={activePage === totalPages}
               title={lang === 'id' ? 'Halaman Terakhir' : 'Last Page'}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] shadow-sm transition"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-slate-700 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-white/[0.1] transition cursor-pointer"
             >
               <ChevronsRight className="w-3.5 h-3.5" />
             </button>
